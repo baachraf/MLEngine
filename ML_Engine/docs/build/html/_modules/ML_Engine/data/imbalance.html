@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ML_Engine.data.imbalance &#8212; ML Engine 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ML_Engine.data.imbalance</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Imbalance Handling</span>
+<span class="sd">==================</span>
+
+<span class="sd">Functions for handling imbalanced datasets for classification and regression.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">class_weight</span>
+
+
+<span class="c1"># Try to import imblearn modules</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">imblearn.over_sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomOverSampler</span><span class="p">,</span> <span class="n">SMOTE</span><span class="p">,</span> <span class="n">ADASYN</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">imblearn.under_sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomUnderSampler</span><span class="p">,</span> <span class="n">TomekLinks</span><span class="p">,</span> <span class="n">EditedNearestNeighbours</span>
+    <span class="n">IMBLEARN_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">IMBLEARN_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;imblearn not installed. Some imbalance handling functions will not be available.&quot;</span><span class="p">)</span>
+
+<span class="c1"># Try to import ImbalancedLearningRegression</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">ImbalancedLearningRegression</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">iblr</span>
+    <span class="n">IBLR_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">IBLR_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;ImbalancedLearningRegression not installed. Regression imbalance functions will not be available.&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="handle_classification_imbalance">
+<a class="viewcode-back" href="../../../ML_Engine.data.html#ML_Engine.data.imbalance.handle_classification_imbalance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_classification_imbalance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;oversample&#39;</span><span class="p">,</span> <span class="n">technique</span><span class="o">=</span><span class="s1">&#39;RandomOverSampler&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle imbalance for classification problems.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X : array-like or pandas.DataFrame</span>
+<span class="sd">        Feature data</span>
+<span class="sd">    y : array-like</span>
+<span class="sd">        Target labels</span>
+<span class="sd">    method : {&#39;oversample&#39;, &#39;undersample&#39;, &#39;class_weights&#39;}</span>
+<span class="sd">        Imbalance handling method</span>
+<span class="sd">    technique : str</span>
+<span class="sd">        Specific technique to use</span>
+<span class="sd">    random_state : int, default=42</span>
+<span class="sd">        Random seed</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    X_resampled : array-like or pandas.DataFrame</span>
+<span class="sd">        Resampled features</span>
+<span class="sd">    y_resampled : array-like</span>
+<span class="sd">        Resampled labels</span>
+<span class="sd">    sample_weights : array-like, optional</span>
+<span class="sd">        Sample weights (only for class_weights method)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">IMBLEARN_AVAILABLE</span> <span class="ow">and</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;oversample&#39;</span><span class="p">,</span> <span class="s1">&#39;undersample&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;imblearn is required for over/under sampling&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;oversample&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;RandomOverSampler&#39;</span><span class="p">:</span>
+            <span class="n">sampler</span> <span class="o">=</span> <span class="n">RandomOverSampler</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;SMOTE&#39;</span><span class="p">:</span>
+            <span class="n">sampler</span> <span class="o">=</span> <span class="n">SMOTE</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;ADASYN&#39;</span><span class="p">:</span>
+            <span class="n">sampler</span> <span class="o">=</span> <span class="n">ADASYN</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown oversampling technique: </span><span class="si">{</span><span class="n">technique</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="n">X_resampled</span><span class="p">,</span> <span class="n">y_resampled</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">fit_resample</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">X_resampled</span><span class="p">,</span> <span class="n">y_resampled</span>
+    
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;undersample&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;RandomUnderSampler&#39;</span><span class="p">:</span>
+            <span class="n">sampler</span> <span class="o">=</span> <span class="n">RandomUnderSampler</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;TomekLinks&#39;</span><span class="p">:</span>
+            <span class="n">sampler</span> <span class="o">=</span> <span class="n">TomekLinks</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;EditedNearestNeighbours&#39;</span><span class="p">:</span>
+            <span class="n">sampler</span> <span class="o">=</span> <span class="n">EditedNearestNeighbours</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown undersampling technique: </span><span class="si">{</span><span class="n">technique</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="n">X_resampled</span><span class="p">,</span> <span class="n">y_resampled</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">fit_resample</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">X_resampled</span><span class="p">,</span> <span class="n">y_resampled</span>
+    
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;class_weights&#39;</span><span class="p">:</span>
+        <span class="c1"># Compute class weights</span>
+        <span class="n">classes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">class_weight</span><span class="o">.</span><span class="n">compute_class_weight</span><span class="p">(</span><span class="s1">&#39;balanced&#39;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">weight_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">classes</span><span class="p">,</span> <span class="n">weights</span><span class="p">))</span>
+        <span class="n">sample_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">weight_dict</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">y</span><span class="p">])</span>
+        
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weights</span>
+    
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown imbalance handling method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_regression_imbalance">
+<a class="viewcode-back" href="../../../ML_Engine.data.html#ML_Engine.data.imbalance.handle_regression_imbalance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_regression_imbalance</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">target_column</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;lds&#39;</span><span class="p">,</span> <span class="n">technique</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle imbalance for regression problems.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        DataFrame containing features and target</span>
+<span class="sd">    target_column : str</span>
+<span class="sd">        Name of target column</span>
+<span class="sd">    method : {&#39;lds&#39;, &#39;fds&#39;, &#39;oversample&#39;, &#39;undersample&#39;}</span>
+<span class="sd">        Imbalance handling method</span>
+<span class="sd">    technique : str, optional</span>
+<span class="sd">        Specific technique for over/under sampling</span>
+<span class="sd">    **kwargs : dict</span>
+<span class="sd">        Additional parameters for specific methods</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        DataFrame with imbalance handling applied</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;lds&#39;</span><span class="p">,</span> <span class="s1">&#39;fds&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">IBLR_AVAILABLE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;ImbalancedLearningRegression is required for LDS/FDS methods&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;lds&#39;</span><span class="p">:</span>
+        <span class="c1"># Label Distribution Smoothing</span>
+        <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">lds</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;fds&#39;</span><span class="p">:</span>
+        <span class="c1"># Feature Distribution Smoothing</span>
+        <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">fds</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;oversample&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;Random Over-sampling&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">random_over_sampling</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;SMOTE&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">smote</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;Introduction of Gaussian Noise&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">gn</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;ADASYN&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">adasyn</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown regression oversampling technique: </span><span class="si">{</span><span class="n">technique</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;undersample&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;Random Under-sampling&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">random_under_sampling</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;Condensed Nearest Neighbor&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">cnn</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;TomekLinks&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">tomeklinks</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">technique</span> <span class="o">==</span> <span class="s1">&#39;Edited Nearest Neighbor&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">iblr</span><span class="o">.</span><span class="n">enn</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown regression undersampling technique: </span><span class="si">{</span><span class="n">technique</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown regression imbalance handling method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_available_classification_techniques">
+<a class="viewcode-back" href="../../../ML_Engine.data.html#ML_Engine.data.imbalance.get_available_classification_techniques">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_available_classification_techniques</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get available imbalance handling techniques for classification.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Dictionary mapping methods to available techniques</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">techniques</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;oversample&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;RandomOverSampler&#39;</span><span class="p">,</span> <span class="s1">&#39;SMOTE&#39;</span><span class="p">,</span> <span class="s1">&#39;ADASYN&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;undersample&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;RandomUnderSampler&#39;</span><span class="p">,</span> <span class="s1">&#39;TomekLinks&#39;</span><span class="p">,</span> <span class="s1">&#39;EditedNearestNeighbours&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;class_weights&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;balanced&#39;</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">techniques</span></div>
+
+
+
+<div class="viewcode-block" id="get_available_regression_techniques">
+<a class="viewcode-back" href="../../../ML_Engine.data.html#ML_Engine.data.imbalance.get_available_regression_techniques">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_available_regression_techniques</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get available imbalance handling techniques for regression.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Dictionary mapping methods to available techniques</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">techniques</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;lds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Label Distribution Smoothing&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;fds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Feature Distribution Smoothing&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;oversample&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s1">&#39;Random Over-sampling&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;SMOTE&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Introduction of Gaussian Noise&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;ADASYN&#39;</span>
+        <span class="p">],</span>
+        <span class="s1">&#39;undersample&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s1">&#39;Random Under-sampling&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Condensed Nearest Neighbor&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;TomekLinks&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Edited Nearest Neighbor&#39;</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">techniques</span></div>
+
+
+
+<div class="viewcode-block" id="compute_class_weights">
+<a class="viewcode-back" href="../../../ML_Engine.data.html#ML_Engine.data.imbalance.compute_class_weights">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_class_weights</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;balanced&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute class weights for classification.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y : array-like</span>
+<span class="sd">        Target labels</span>
+<span class="sd">    method : {&#39;balanced&#39;, &#39;custom&#39;}</span>
+<span class="sd">        Weight computation method</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Dictionary mapping class to weight</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;balanced&#39;</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">class_weight</span><span class="o">.</span><span class="n">compute_class_weight</span><span class="p">(</span><span class="s1">&#39;balanced&#39;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Equal weights</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">classes</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">classes</span><span class="p">,</span> <span class="n">weights</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="check_imbalance_ratio">
+<a class="viewcode-back" href="../../../ML_Engine.data.html#ML_Engine.data.imbalance.check_imbalance_ratio">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_imbalance_ratio</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if dataset is imbalanced.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y : array-like</span>
+<span class="sd">        Target labels</span>
+<span class="sd">    threshold : float, default=0.5</span>
+<span class="sd">        Threshold for imbalance ratio (minority class proportion)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if imbalanced</span>
+<span class="sd">    float</span>
+<span class="sd">        Imbalance ratio (minority class proportion)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">class_counts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+    <span class="n">minority_proportion</span> <span class="o">=</span> <span class="n">class_counts</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">is_imbalanced</span> <span class="o">=</span> <span class="n">minority_proportion</span> <span class="o">&lt;</span> <span class="n">threshold</span>
+    
+    <span class="k">return</span> <span class="n">is_imbalanced</span><span class="p">,</span> <span class="n">minority_proportion</span></div>
+
+
+
+<div class="viewcode-block" id="prepare_lds_weights">
+<a class="viewcode-back" href="../../../ML_Engine.data.html#ML_Engine.data.imbalance.prepare_lds_weights">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_lds_weights</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prepare weights for Label Distribution Smoothing.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y : array-like</span>
+<span class="sd">        Target values</span>
+<span class="sd">    **kwargs : dict</span>
+<span class="sd">        Additional parameters for LDS</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array-like</span>
+<span class="sd">        Sample weights</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">IBLR_AVAILABLE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;ImbalancedLearningRegression is required for LDS&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># This is a simplified version</span>
+    <span class="c1"># In practice, you would use the actual LDS implementation</span>
+    <span class="n">y_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">kernel</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;kernel&#39;</span><span class="p">,</span> <span class="s1">&#39;gaussian&#39;</span><span class="p">)</span>
+    <span class="n">bandwidth</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bandwidth&#39;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    
+    <span class="c1"># Simple kernel density estimation</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">stats</span>
+    <span class="n">kde</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">gaussian_kde</span><span class="p">(</span><span class="n">y_series</span><span class="p">,</span> <span class="n">bw_method</span><span class="o">=</span><span class="n">bandwidth</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">kde</span><span class="p">(</span><span class="n">y_series</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">weights</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>  <span class="c1"># Normalize</span>
+    
+    <span class="k">return</span> <span class="n">weights</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">ML Engine</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../ML_Engine.html">ML_Engine package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, ACHRAF BEN AHMED.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

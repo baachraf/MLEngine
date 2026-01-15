@@ -1,0 +1,42 @@
+ML\_Engine.data package
+=======================
+
+.. automodule:: ML_Engine.data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ML\_Engine.data.cleaning module
+-------------------------------
+
+.. automodule:: ML_Engine.data.cleaning
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ML\_Engine.data.imbalance module
+--------------------------------
+
+.. automodule:: ML_Engine.data.imbalance
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ML\_Engine.data.io module
+-------------------------
+
+.. automodule:: ML_Engine.data.io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ML\_Engine.data.transformation module
+-------------------------------------
+
+.. automodule:: ML_Engine.data.transformation
+   :members:
+   :undoc-members:
+   :show-inheritance:

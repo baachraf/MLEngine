@@ -1,0 +1,106 @@
+ml\_core package
+================
+
+.. automodule:: ml_core
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+ml\_core.automl module
+----------------------
+
+.. automodule:: ml_core.automl
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.data\_cleaning module
+------------------------------
+
+.. automodule:: ml_core.data_cleaning
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.data\_io module
+------------------------
+
+.. automodule:: ml_core.data_io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.data\_transformation module
+------------------------------------
+
+.. automodule:: ml_core.data_transformation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.dimensionality\_reduction module
+-----------------------------------------
+
+.. automodule:: ml_core.dimensionality_reduction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.evaluation module
+--------------------------
+
+.. automodule:: ml_core.evaluation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.feature\_selection module
+----------------------------------
+
+.. automodule:: ml_core.feature_selection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.generate\_docs module
+------------------------------
+
+.. automodule:: ml_core.generate_docs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.imbalance\_handling module
+-----------------------------------
+
+.. automodule:: ml_core.imbalance_handling
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.model\_configs module
+------------------------------
+
+.. automodule:: ml_core.model_configs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.model\_training module
+-------------------------------
+
+.. automodule:: ml_core.model_training
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ml\_core.utils module
+---------------------
+
+.. automodule:: ml_core.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

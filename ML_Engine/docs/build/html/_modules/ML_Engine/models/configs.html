@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ML_Engine.models.configs &#8212; ML Engine 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ML_Engine.models.configs</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Model Configurations</span>
+<span class="sd">====================</span>
+
+<span class="sd">Pre-defined model configurations for classification and regression.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">gaussian_process</span><span class="p">,</span> <span class="n">linear_model</span><span class="p">,</span> <span class="n">discriminant_analysis</span><span class="p">,</span> <span class="n">dummy</span><span class="p">,</span>
+    <span class="n">ensemble</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">neighbors</span><span class="p">,</span> <span class="n">svm</span><span class="p">,</span> <span class="n">naive_bayes</span><span class="p">,</span> <span class="n">kernel_ridge</span><span class="p">,</span>
+    <span class="n">neural_network</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">SGDClassifier</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xgb</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">xgb</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;xgboost not installed. XGBoost models will not be available.&#39;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lgb</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">lgb</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;lightgbm not installed. LightGBM models will not be available.&#39;</span><span class="p">)</span>
+
+
+<span class="c1"># Helper class for missing libraries</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_MissingLibrary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Placeholder for missing library that raises informative ImportError.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">library_name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">library_name</span> <span class="o">=</span> <span class="n">library_name</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">library_name</span><span class="si">}</span><span class="s2"> is not installed. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Please install it to use this model.&quot;</span>
+        <span class="p">)</span>
+
+<span class="c1"># ============================================================================</span>
+<span class="c1"># CLASSIFICATION MODELS</span>
+<span class="c1"># ============================================================================</span>
+
+<span class="n">CLASSIFICATION_MODELS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;GaussianProcessClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">gaussian_process</span><span class="o">.</span><span class="n">GaussianProcessClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;max_iter_predict&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations for Prediction&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                                 <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+            <span class="s1">&#39;n_restarts_optimizer&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Optimizer Restarts&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                                     <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Probabilistic classification using Gaussian processes. Can be computationally intensive for large datasets.&#39;</span>
+    <span class="p">},</span>
+    <span class="c1"># &quot;MLPClassifier&quot;: {</span>
+    <span class="c1">#     &#39;class&#39;: neural_network.MLPClassifier,</span>
+    <span class="c1">#     &#39;params&#39;: {</span>
+    <span class="c1">#         &#39;hidden_layer_sizes&#39;: {&#39;type&#39;: &#39;slider&#39;, &#39;label&#39;: &#39;Hidden Layer Size&#39;, &#39;min&#39;: 10, &#39;max&#39;: 200,</span>
+    <span class="c1">#                                &#39;default&#39;: 100},</span>
+    <span class="c1">#         &#39;learning_rate_init&#39;: {&#39;type&#39;: &#39;slider&#39;, &#39;label&#39;: &#39;Initial Learning Rate&#39;, &#39;min&#39;: 0.0001, &#39;max&#39;: 0.1,</span>
+    <span class="c1">#                                &#39;default&#39;: 0.001},</span>
+    <span class="c1">#         &#39;max_iter&#39;: {&#39;type&#39;: &#39;slider&#39;, &#39;label&#39;: &#39;Maximum Iterations&#39;, &#39;min&#39;: 100, &#39;max&#39;: 1000, &#39;default&#39;: 200},</span>
+    <span class="c1">#         &#39;alpha&#39;: {&#39;type&#39;: &#39;slider&#39;, &#39;label&#39;: &#39;Alpha (L2 penalty)&#39;, &#39;min&#39;: 0.0001, &#39;max&#39;: 0.1, &#39;default&#39;: 0.0001}</span>
+    <span class="c1">#     },</span>
+    <span class="c1">#     &#39;multi_output&#39;: True,  # Native multi-output support</span>
+    <span class="c1">#     &#39;supports_sample_weight&#39;: False,</span>
+    <span class="c1">#     &#39;supports_class_weight&#39;: False,</span>
+    <span class="c1">#     &#39;notes&#39;: &#39;Neural network using backpropagation. Good for complex non-linear relationships.&#39;</span>
+    <span class="c1"># },</span>
+    <span class="s2">&quot;RidgeClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">RidgeClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha (regularization strength)&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                      <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+            <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Linear classifier with L2 regularization. Good for high-dimensional data.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;QuadraticDiscriminantAnalysis&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">discriminant_analysis</span><span class="o">.</span><span class="n">QuadraticDiscriminantAnalysis</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;reg_param&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Regularization Parameter&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                          <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+            <span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Tolerance&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Quadratic classifier with no assumptions of equal covariance matrices.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;LinearDiscriminantAnalysis&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">discriminant_analysis</span><span class="o">.</span><span class="n">LinearDiscriminantAnalysis</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_components&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Components&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Tolerance&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Linear classifier with assumption of equal covariance matrices. Also useful for dimensionality reduction.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;DummyClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">dummy</span><span class="o">.</span><span class="n">DummyClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;strategy&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Strategy&#39;</span><span class="p">,</span>
+                         <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;stratified&#39;</span><span class="p">,</span> <span class="s1">&#39;most_frequent&#39;</span><span class="p">,</span> <span class="s1">&#39;prior&#39;</span><span class="p">,</span> <span class="s1">&#39;uniform&#39;</span><span class="p">,</span> <span class="s1">&#39;constant&#39;</span><span class="p">],</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;prior&#39;</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Baseline classifier that makes predictions using simple rules. Useful as a baseline comparison.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;LogisticRegression&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LogisticRegression</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;C (Inverse of regularization strength)&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+            <span class="s1">&#39;solver&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Solver&#39;</span><span class="p">,</span> <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;lbfgs&#39;</span><span class="p">,</span> <span class="s1">&#39;liblinear&#39;</span><span class="p">,</span> <span class="s1">&#39;newton-cg&#39;</span><span class="p">,</span> <span class="s1">&#39;sag&#39;</span><span class="p">,</span> <span class="s1">&#39;saga&#39;</span><span class="p">],</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;lbfgs&#39;</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Good for binary classification, needs wrapper for multi-output&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;GradientBoostingClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">GradientBoostingClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+            <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+            <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Samples Split&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+            <span class="s1">&#39;subsample&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Subsample&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Gradient Boosting for classification. Can overfit on small datasets but often works well on larger ones.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;ExtraTreesClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">ExtraTreesClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+            <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Samples Split&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Randomized decision trees for classification.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;RandomForestClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">RandomForestClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+            <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Samples Split&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Natively supports multi-output classification&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;XGBClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">xgb</span><span class="o">.</span><span class="n">XGBClassifier</span> <span class="k">if</span> <span class="n">xgb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s1">&#39;xgboost&#39;</span><span class="p">),</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The number of boosting rounds or trees. More trees increase accuracy but also training time.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The maximum depth of each tree. Higher depth can capture more patterns but may lead to overfitting.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Step size used to shrink the contribution of each tree. Lower values make the learning process slower but may yield better results.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;subsample&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Subsample&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The fraction of samples used in each boosting round. Reducing this can help prevent overfitting.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;colsample_bytree&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Colsample by Tree&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The fraction of features used when constructing each tree. Lower values can help reduce overfitting.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;min_child_weight&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Child Weight&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum sum of instance weight in a child. Helps prevent overfitting by controlling the complexity of the model.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;gamma&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Gamma&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The minimum loss reduction required for further partitioning. A higher value leads to more conservative splits.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;reg_lambda&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L2 Regularization (Lambda)&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;L2 regularization for weights. Larger values make the model more resistant to overfitting.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;reg_alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 Regularization (Alpha)&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 regularization for weights. It adds a penalty for large weights, encouraging sparsity and reducing overfitting.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;scale_pos_weight&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Scale Pos Weight (for Imbalance)&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Controls the balance of positive and negative classes. A higher value gives more weight to positive classes in imbalanced datasets.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;early_stopping_rounds&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Early Stopping Rounds&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Stops training if no improvement in evaluation metric after a set number of rounds. Helps avoid overfitting.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Needs wrapper for multi-output, supports both sample and class weights&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;LGBMClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">lgb</span><span class="o">.</span><span class="n">LGBMClassifier</span> <span class="k">if</span> <span class="n">lgb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s1">&#39;lightgbm&#39;</span><span class="p">),</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">},</span>
+            <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Needs wrapper for multi-output, efficient for large datasets&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;DecisionTreeClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">DecisionTreeClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+            <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Samples Split&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Natively supports multi-output classification&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;KNearestNeighbors&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">neighbors</span><span class="o">.</span><span class="n">KNeighborsClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_neighbors&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Neighbors&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
+            <span class="s1">&#39;algorithm&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Algorithm&#39;</span><span class="p">,</span> <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;ball_tree&#39;</span><span class="p">,</span> <span class="s1">&#39;kd_tree&#39;</span><span class="p">,</span> <span class="s1">&#39;brute&#39;</span><span class="p">],</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;auto&#39;</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># KNN doesn&#39;t support sample weights</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Natively supports multi-output, but no weight support&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;SVC&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">svm</span><span class="o">.</span><span class="n">SVC</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;C (Regularization Parameter)&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+            <span class="s1">&#39;kernel&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Kernel&#39;</span><span class="p">,</span> <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;poly&#39;</span><span class="p">,</span> <span class="s1">&#39;rbf&#39;</span><span class="p">,</span> <span class="s1">&#39;sigmoid&#39;</span><span class="p">],</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;rbf&#39;</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Needs wrapper for multi-output, can be slow on large datasets&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;GaussianNB&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">naive_bayes</span><span class="o">.</span><span class="n">GaussianNB</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Needs wrapper for multi-output, supports sample weights only&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;AdaBoostClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">AdaBoostClassifier</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">},</span>
+            <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Needs wrapper for multi-output, inherently handles imbalanced datasets&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;SGDClassifier&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">SGDClassifier</span><span class="p">,</span>
+    <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;loss&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Loss Function&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hinge&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="s1">&#39;modified_huber&#39;</span><span class="p">,</span> <span class="s1">&#39;squared_hinge&#39;</span><span class="p">,</span> <span class="s1">&#39;perceptron&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;hinge&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Specifies the loss function to be used. For instance, &quot;hinge&quot; is for SVM, &quot;log&quot; for logistic regression, and &quot;perceptron&quot; for linear perceptron.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;penalty&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Penalty&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;l2&#39;</span><span class="p">,</span> <span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;elasticnet&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;l2&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Regularization term to avoid overfitting. Use &quot;l2&quot; for Ridge, &quot;l1&quot; for Lasso, and &quot;elasticnet&quot; for a mix of both.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha (Regularization Strength)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-1</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Constant that multiplies the regularization term. Smaller values make the model more flexible but risk overfitting.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;l1_ratio&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 Ratio (ElasticNet Mixing)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.15</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The ElasticNet mixing parameter. Used only if &quot;penalty&quot; is set to &quot;elasticnet&quot;. 0 means L2 penalty only, and 1 means L1 penalty only.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Iterations&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10000</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The maximum number of iterations the optimizer will run. Increase this if the model does not converge.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Tolerance&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-2</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The stopping criterion for optimization. Smaller values require more precision but take longer.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate Schedule&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="s1">&#39;optimal&#39;</span><span class="p">,</span> <span class="s1">&#39;invscaling&#39;</span><span class="p">,</span> <span class="s1">&#39;adaptive&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;optimal&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Controls the step size in updating weights. &quot;optimal&quot; is recommended for most tasks, while &quot;adaptive&quot; adjusts based on performance.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;eta0&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Initial Learning Rate (Eta0)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-5</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The initial step size used by the learning rate schedule. Relevant only if &quot;learning_rate&quot; is not &quot;optimal&quot;.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;power_t&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Power T (Learning Rate Exponent)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Exponent for &quot;invscaling&quot; learning rate. Higher values slow down learning as training progresses.&#39;</span>
+        <span class="p">},</span>
+
+        <span class="s1">&#39;validation_fraction&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Validation Fraction&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The proportion of training data to set aside as validation data for early stopping.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;n_iter_no_change&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Iterations Without Improvement&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of epochs with no improvement to wait before stopping early. Used with early stopping.&#39;</span>
+        <span class="p">},</span>
+
+    <span class="p">},</span>
+    <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputClassifier wrapper</span>
+    <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;supports_class_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;SGDClassifier is a highly flexible model that works well for linear classification tasks. Be mindful of tuning the regularization parameters to avoid overfitting or underfitting.&#39;</span>
+<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># ============================================================================</span>
+<span class="c1"># REGRESSION MODELS</span>
+<span class="c1"># ============================================================================</span>
+
+<span class="n">REGRESSION_MODELS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;KNeighborsRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">neighbors</span><span class="o">.</span><span class="n">KNeighborsRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_neighbors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Neighbors&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of neighbors to use for prediction. Higher values reduce the impact of noise but make boundaries less distinct.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;weights&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Weight Function&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;uniform&#39;</span><span class="p">,</span> <span class="s1">&#39;distance&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;uniform&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Weight function used in prediction. Uniform: all points weighted equally. Distance: points weighted by inverse of distance.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;p&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Power Parameter&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Power parameter for the Minkowski metric. p=1 is Manhattan distance, p=2 is Euclidean distance.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Simple yet effective method for non-linear regression. Performance depends heavily on feature scaling.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;DecisionTreeRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">DecisionTreeRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Depth&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum depth of the tree. Deeper trees can model more complex patterns but may overfit.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum Samples Split&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum number of samples required to split an internal node.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;min_samples_leaf&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum Samples Leaf&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum number of samples required to be at a leaf node.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_features&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Features&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Fraction of features to consider when looking for the best split.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Simple to understand and interpret. Tends to overfit if not properly constrained.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;AdaBoostRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">AdaBoostRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of estimators at which boosting is terminated.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Weight applied to each regressor at each boosting iteration.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;loss&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Loss Function&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;square&#39;</span><span class="p">,</span> <span class="s1">&#39;exponential&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The loss function to use when updating the weights after each boosting iteration.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Ensemble method that combines weak learners sequentially. Good for reducing bias and variance.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="c1"># &quot;MLPRegressor&quot;: {</span>
+    <span class="c1">#     &#39;class&#39;: neural_network.MLPRegressor,</span>
+    <span class="c1">#     &#39;params&#39;: {</span>
+    <span class="c1">#         &#39;hidden_layer_sizes&#39;: {</span>
+    <span class="c1">#             &#39;type&#39;: &#39;text&#39;,</span>
+    <span class="c1">#             &#39;label&#39;: &#39;Hidden Layer Sizes&#39;,</span>
+    <span class="c1">#             &#39;default&#39;: &#39;(100,)&#39;,</span>
+    <span class="c1">#             &#39;help&#39;: &#39;Number of neurons in each hidden layer. Format: tuple of integers.&#39;</span>
+    <span class="c1">#         },</span>
+    <span class="c1">#         &#39;activation&#39;: {</span>
+    <span class="c1">#             &#39;type&#39;: &#39;select&#39;,</span>
+    <span class="c1">#             &#39;label&#39;: &#39;Activation Function&#39;,</span>
+    <span class="c1">#             &#39;options&#39;: [&#39;identity&#39;, &#39;logistic&#39;, &#39;tanh&#39;, &#39;relu&#39;],</span>
+    <span class="c1">#             &#39;default&#39;: &#39;relu&#39;,</span>
+    <span class="c1">#             &#39;help&#39;: &#39;Activation function for hidden layer.&#39;</span>
+    <span class="c1">#         },</span>
+    <span class="c1">#         &#39;solver&#39;: {</span>
+    <span class="c1">#             &#39;type&#39;: &#39;select&#39;,</span>
+    <span class="c1">#             &#39;label&#39;: &#39;Solver&#39;,</span>
+    <span class="c1">#             &#39;options&#39;: [&#39;lbfgs&#39;, &#39;sgd&#39;, &#39;adam&#39;],</span>
+    <span class="c1">#             &#39;default&#39;: &#39;adam&#39;,</span>
+    <span class="c1">#             &#39;help&#39;: &#39;The solver for weight optimization.&#39;</span>
+    <span class="c1">#         },</span>
+    <span class="c1">#         &#39;alpha&#39;: {</span>
+    <span class="c1">#             &#39;type&#39;: &#39;slider&#39;,</span>
+    <span class="c1">#             &#39;label&#39;: &#39;Alpha (L2 penalty)&#39;,</span>
+    <span class="c1">#             &#39;min&#39;: 0.0001,</span>
+    <span class="c1">#             &#39;max&#39;: 1.0,</span>
+    <span class="c1">#             &#39;default&#39;: 0.0001,</span>
+    <span class="c1">#             &#39;help&#39;: &#39;L2 penalty (regularization term) parameter.&#39;</span>
+    <span class="c1">#         },</span>
+    <span class="c1">#         &#39;learning_rate&#39;: {</span>
+    <span class="c1">#             &#39;type&#39;: &#39;select&#39;,</span>
+    <span class="c1">#             &#39;label&#39;: &#39;Learning Rate&#39;,</span>
+    <span class="c1">#             &#39;options&#39;: [&#39;constant&#39;, &#39;invscaling&#39;, &#39;adaptive&#39;],</span>
+    <span class="c1">#             &#39;default&#39;: &#39;constant&#39;,</span>
+    <span class="c1">#             &#39;help&#39;: &#39;Learning rate schedule for weight updates.&#39;</span>
+    <span class="c1">#         },</span>
+    <span class="c1">#         &#39;max_iter&#39;: {</span>
+    <span class="c1">#             &#39;type&#39;: &#39;slider&#39;,</span>
+    <span class="c1">#             &#39;label&#39;: &#39;Maximum Iterations&#39;,</span>
+    <span class="c1">#             &#39;min&#39;: 100,</span>
+    <span class="c1">#             &#39;max&#39;: 1000,</span>
+    <span class="c1">#             &#39;default&#39;: 200,</span>
+    <span class="c1">#             &#39;help&#39;: &#39;Maximum number of iterations.&#39;</span>
+    <span class="c1">#         }</span>
+    <span class="c1">#     },</span>
+    <span class="c1">#     &#39;multi_output&#39;: True,  # Native multi-output support</span>
+    <span class="c1">#     &#39;supports_sample_weight&#39;: True,</span>
+    <span class="c1">#     &#39;notes&#39;: &#39;Neural network model. Good for complex non-linear relationships but requires careful tuning.&#39;</span>
+    <span class="c1"># },</span>
+
+    <span class="s2">&quot;DummyRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">dummy</span><span class="o">.</span><span class="n">DummyRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;strategy&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Strategy&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="s1">&#39;quantile&#39;</span><span class="p">,</span> <span class="s1">&#39;constant&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Strategy to use for generating predictions.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;constant&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Constant Value&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Constant value to predict if strategy is constant.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;quantile&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Quantile&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Quantile to predict if strategy is quantile.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Baseline regressor that makes simple predictions. Useful as a benchmark for comparing with other regressors.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;PassiveAggressiveRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">PassiveAggressiveRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Regularization Parameter&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum step size for weight updates. Larger values mean more aggressive updates.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of passes over the training data.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Tolerance&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-5</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-2</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Stopping criterion. Stop when loss is less than tol.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Online learning algorithm that remains passive for correct predictions and aggressive for incorrect ones.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;RANSACRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">RANSACRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;min_samples&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum Samples&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum number of samples chosen randomly from original data.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_trials&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Trials&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of iterations for random sample selection.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;residual_threshold&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Residual Threshold&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum residual for a sample to be classified as an inlier.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Robust method for fitting a model in the presence of outliers.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;TheilSenRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">TheilSenRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of iterations for the optimization.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Tolerance&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-5</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-2</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Tolerance for stopping criterion.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Robust regression method that is resistant to outliers.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;HuberRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">HuberRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;epsilon&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Epsilon&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.35</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Parameter that controls the number of samples that should be classified as outliers.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of iterations for the optimization.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Regularization parameter.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Robust regression method that combines the best of both square loss and absolute loss.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;KernelRidge&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">kernel_ridge</span><span class="o">.</span><span class="n">KernelRidge</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Regularization strength.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;kernel&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Kernel&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;rbf&#39;</span><span class="p">,</span> <span class="s1">&#39;poly&#39;</span><span class="p">,</span> <span class="s1">&#39;sigmoid&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;rbf&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Kernel type to be used.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;gamma&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Gamma&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Kernel coefficient for rbf, poly and sigmoid kernels.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Combines ridge regression with kernel trick. Useful for non-linear relationships.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;SVR&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">svm</span><span class="o">.</span><span class="n">SVR</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;C (Regularization)&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Regularization parameter. Trades off margin size against training error.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;kernel&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Kernel&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;rbf&#39;</span><span class="p">,</span> <span class="s1">&#39;poly&#39;</span><span class="p">,</span> <span class="s1">&#39;sigmoid&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;rbf&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Kernel type to be used.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;epsilon&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Epsilon&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Specifies the epsilon-tube within which no penalty is associated.&#39;</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;gamma&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;select&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Gamma&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">[</span>
+              <span class="s2">&quot;scale&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;auto&quot;</span><span class="p">],</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;scale&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Kernel coefficient for rbf, poly and sigmoid kernels.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Powerful regression method that handles non-linear relationships well.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Lars&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">Lars</span><span class="p">,</span>
+    <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;n_nonzero_coefs&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;slider&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Non-zero Coefficients&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+        <span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;Target number of non-zero coefficients. Controls model sparsity.&quot;</span>
+      <span class="p">},</span>
+      <span class="s2">&quot;fit_intercept&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;checkbox&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Fit Intercept&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;Whether to calculate the intercept for this model.&quot;</span>
+      <span class="p">},</span>
+      <span class="s2">&quot;eps&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;input&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Epsilon&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mf">1e-16</span><span class="p">,</span>
+        <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mf">1e-2</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mf">2.220446049250313e-16</span><span class="p">,</span>
+        <span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;The machine-precision regularization in the computation of the Cholesky diagonal factors.&quot;</span>
+      <span class="p">},</span>
+      <span class="s2">&quot;copy_X&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;checkbox&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Copy X&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;If True, X will be copied; else, it may be overwritten.&quot;</span>
+      <span class="p">},</span>
+
+
+    <span class="p">},</span>
+    <span class="s2">&quot;multi_output&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;supports_sample_weight&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;notes&quot;</span><span class="p">:</span> <span class="s2">&quot;Efficient for high-dimensional data with L1 regularization. Note: Data normalization should be handled through preprocessing steps using StandardScaler.&quot;</span>
+
+    <span class="p">},</span>
+
+    <span class="s2">&quot;LassoLars&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LassoLars</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha (Regularization Strength)&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Regularization parameter. Controls the strength of L1 penalty.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of iterations to perform.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Combines Lasso with LAR algorithm for efficient regularization path computation.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;OrthogonalMatchingPursuit&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">OrthogonalMatchingPursuit</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_nonzero_coefs&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Non-zero Coefficients&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Target number of non-zero coefficients.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Tolerance&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-8</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum residual norm stopping criterion.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Greedy algorithm for sparse approximation of signals.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;BayesianRidge&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">BayesianRidge</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of iterations for the optimization algorithm.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;alpha_1&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha 1&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-7</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Shape parameter for Gamma distribution of precision of weights.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;alpha_2&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha 2&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-7</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Shape parameter for Gamma distribution of precision of noise.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Bayesian approach to ridge regression with automatic relevance determination.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;ARDRegression&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">ARDRegression</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum Iterations&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of iterations for the optimization.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;threshold_lambda&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Threshold Lambda&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Threshold for removing weights with high precision.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Bayesian ARD regression with adaptive regularization.&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;LinearRegression&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Natively supports multi-output regression&#39;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Ridge&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">Ridge</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha (Regularization Strength)&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Controls the regularization strength. Higher values increase regularization, which can reduce overfitting but may lead to underfitting. Use 0 for no regularization.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Supports L2 regularization to improve generalization in regression tasks.&#39;</span>
+    <span class="p">},</span>
+
+
+    <span class="s2">&quot;Lasso&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">Lasso</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha (Regularization Strength)&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Determines the L1 regularization strength. Higher values lead to sparser models by forcing some coefficients to zero, reducing complexity but potentially underfitting.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Applies L1 regularization; useful for sparse models. Multi-output requires a wrapper.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;GradientBoostingRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">GradientBoostingRegressor</span><span class="p">,</span>
+    <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The number of boosting stages (trees) to fit. More trees increase model complexity and accuracy but require more computation.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Determines the contribution of each tree. Lower values require more trees for convergence but may improve performance.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Limits the depth of each tree. Shallower trees reduce overfitting but may underfit.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Samples Split&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The minimum number of samples required to split an internal node. Higher values prevent overfitting on noisy datasets.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;subsample&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Subsample&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Fraction of samples used for fitting each tree. Lower values prevent overfitting but increase variance.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_features&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Features&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The fraction of features considered when looking for the best split. Lower values can reduce overfitting but may underfit if set too low.&#39;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+    <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Flexible boosting model that handles nonlinear relationships well. Ensure parameter tuning for optimal performance.&#39;</span>
+<span class="p">},</span>
+
+    <span class="s2">&quot;ExtraTreesRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">ExtraTreesRegressor</span><span class="p">,</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The number of trees in the forest. Increasing this generally improves performance but increases computation time.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The maximum depth of each tree. Shallower trees reduce overfitting but may underfit.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Samples Split&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The minimum number of samples required to split an internal node. Higher values reduce overfitting.&#39;</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;max_features&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Features&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Fraction of features considered at each split. Lower values may improve generalization but risk underfitting.&#39;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+        <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Randomized decision trees; excellent for high-dimensional data. Tuning max_features is critical to avoid overfitting.&#39;</span>
+    <span class="p">},</span>
+
+    <span class="s2">&quot;ElasticNet&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">ElasticNet</span><span class="p">,</span>
+    <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Alpha (Regularization Strength)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Controls the combined regularization strength of L1 and L2 penalties. Higher values increase regularization.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;l1_ratio&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 Ratio&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Proportion of L1 regularization in the combined penalty. 0 = Ridge, 1 = Lasso, values in between are a mix.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Iterations&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10000</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum number of iterations for the optimization algorithm. Increase if the model does not converge.&#39;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+    <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Combines L1 and L2 penalties for balanced regularization. Suitable for sparse datasets.&#39;</span>
+<span class="p">},</span>
+
+    <span class="s2">&quot;RandomForestRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">RandomForestRegressor</span><span class="p">,</span>
+    <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The number of trees in the forest. More trees typically improve performance but increase computation time.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Limits the depth of each tree. Shallower trees generalize better but may underfit.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;min_samples_split&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Samples Split&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum number of samples required to split an internal node. Higher values reduce overfitting.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_features&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Features&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Fraction of features considered at each split. Lower values reduce overfitting but may underfit.&#39;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Native multi-output support</span>
+    <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Ensemble method with bagging and random feature selection; works well on high-dimensional data.&#39;</span>
+<span class="p">},</span>
+
+    <span class="s2">&quot;XGBRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">xgb</span><span class="o">.</span><span class="n">XGBRegressor</span> <span class="k">if</span> <span class="n">xgb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s1">&#39;xgboost&#39;</span><span class="p">),</span>
+    <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The number of boosting rounds or trees to build. Higher values improve performance but increase computation time.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;The maximum depth of each tree. Deeper trees can capture complex patterns but may overfit.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Step size for updating weights in each boosting round. Smaller values slow training but improve accuracy.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;subsample&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Subsample&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Proportion of training samples used in each boosting round. Helps prevent overfitting.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;colsample_bytree&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Colsample by Tree&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Fraction of features used to build each tree. Lower values may improve generalization.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;min_child_weight&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Child Weight&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum sum of instance weights in a leaf node. Higher values prevent overfitting in small datasets.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;gamma&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Gamma&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum loss reduction required for splitting a node. Larger values make the algorithm more conservative.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;reg_lambda&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L2 Regularization (Lambda)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;L2 penalty for weights. Helps control model complexity and prevent overfitting.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;reg_alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 Regularization (Alpha)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 penalty for weights. Higher values lead to sparser models, reducing complexity.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;early_stopping_rounds&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Early Stopping Rounds&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Stops training if the evaluation metric does not improve after these rounds. Helps avoid overfitting.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;scale_pos_weight&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Scale Positive Weight&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Controls the balance of positive and negative weights. Useful for handling class imbalance in the dataset.&#39;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+    <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Highly versatile model with extensive parameter control. Best for complex and structured datasets.&#39;</span>
+<span class="p">},</span>
+
+    <span class="s2">&quot;LGBMRegressor&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">lgb</span><span class="o">.</span><span class="n">LGBMRegressor</span> <span class="k">if</span> <span class="n">lgb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s1">&#39;lightgbm&#39;</span><span class="p">),</span>
+    <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of Estimators&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Number of boosting rounds. Higher values increase accuracy but require more computation.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Max Depth&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum depth of trees. Use -1 for no limit. Shallower trees are faster but may underfit.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Learning Rate&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Controls the step size in updating weights. Smaller values require more boosting rounds.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;subsample&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Subsample&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Fraction of training data used for each boosting step. Helps prevent overfitting.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;colsample_bytree&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Feature Fraction&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Fraction of features randomly selected per tree. Reduces overfitting in high-dimensional datasets.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;min_child_samples&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Min Child Samples&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;Minimum number of samples required in a leaf. Larger values prevent overfitting.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;reg_lambda&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L2 Regularization (Lambda)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;L2 penalty for weights. Controls overfitting by penalizing large weights.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;reg_alpha&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;slider&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 Regularization (Alpha)&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;L1 penalty for weights. Encourages sparsity in the model.&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;feature_pre_filter&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;checkbox&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Feature Pre-Filter&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;help&#39;</span><span class="p">:</span> <span class="s1">&#39;If enabled, LightGBM filters features with no predictive power early. Can speed up training.&#39;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;multi_output&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Requires MultiOutputRegressor wrapper</span>
+    <span class="s1">&#39;supports_sample_weight&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;notes&#39;</span><span class="p">:</span> <span class="s1">&#39;Efficient for large datasets and high-dimensional data. Supports histogram-based learning for faster training.&#39;</span>
+<span class="p">},</span>
+
+<span class="p">}</span>
+
+<div class="viewcode-block" id="get_model_config">
+<a class="viewcode-back" href="../../../ML_Engine.models.html#ML_Engine.models.configs.get_model_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">problem_type</span><span class="o">=</span><span class="s1">&#39;classification&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get configuration for a specific model.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model_name : str</span>
+<span class="sd">        Name of the model</span>
+<span class="sd">    problem_type : {&#39;classification&#39;, &#39;regression&#39;}</span>
+<span class="sd">        Type of problem</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Model configuration</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">problem_type</span> <span class="o">==</span> <span class="s1">&#39;classification&#39;</span><span class="p">:</span>
+        <span class="n">models_dict</span> <span class="o">=</span> <span class="n">CLASSIFICATION_MODELS</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">models_dict</span> <span class="o">=</span> <span class="n">REGRESSION_MODELS</span>
+    
+    <span class="k">if</span> <span class="n">model_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">models_dict</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model &#39;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39; not found in </span><span class="si">{</span><span class="n">problem_type</span><span class="si">}</span><span class="s2"> models&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">models_dict</span><span class="p">[</span><span class="n">model_name</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="list_models">
+<a class="viewcode-back" href="../../../ML_Engine.models.html#ML_Engine.models.configs.list_models">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span><span class="n">problem_type</span><span class="o">=</span><span class="s1">&#39;classification&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List available models for a problem type.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    problem_type : {&#39;classification&#39;, &#39;regression&#39;}</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        Model names</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">problem_type</span> <span class="o">==</span> <span class="s1">&#39;classification&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">CLASSIFICATION_MODELS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">REGRESSION_MODELS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">ML Engine</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../ML_Engine.html">ML_Engine package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, ACHRAF BEN AHMED.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
