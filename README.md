@@ -35,6 +35,7 @@ The `examples/` directory contains comprehensive Jupyter notebooks demonstrating
 | [`02_Feature_Selection_Deep_Dive.ipynb`](./examples/02_Feature_Selection_Deep_Dive.ipynb) | Comprehensive feature engineering exploration. | Variance threshold, K-best, RFE, Boruta, PCA, t-SNE visualization |
 | [`03_Hyperparameter_Tuning_Deep_Dive.ipynb`](./examples/03_Hyperparameter_Tuning_Deep_Dive.ipynb) | Advanced hyperparameter optimization. | Manual tuning, Optuna automated tuning, optimization history visualization |
 | [`04_Full_Regression_Pipeline.ipynb`](./examples/04_Full_Regression_Pipeline.ipynb) | Complete regression workflow. | Regression model comparison, R² scoring, actual vs predicted visualization |
+| [`05_EDA_and_Time_Series_Analysis.ipynb`](./examples/05_EDA_and_Time_Series_Analysis.ipynb) | Advanced financial time series analysis with real stock data. | yfinance integration, returns calculation, volatility analysis, date/lag/rolling features, stationarity testing, time series splitting |
 
 ### Running the Examples
 
@@ -42,6 +43,8 @@ The `examples/` directory contains comprehensive Jupyter notebooks demonstrating
 2. **Launch Jupyter**: `jupyter notebook`
 3. **Open any notebook** in the `examples/` directory
 4. **Restart the kernel** and run all cells (notebooks have been fixed for the Adult Census dataset)
+
+**Note**: Notebook 5 requires `yfinance` for downloading real stock data, which is included in `requirements.txt`.
 
 **Dataset**: All notebooks use the Adult Census dataset (`dataset/adult_census_sample.csv`) with:
 - Classification target: `income` (binary classification)
