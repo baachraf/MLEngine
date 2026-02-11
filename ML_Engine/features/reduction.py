@@ -8,8 +8,10 @@ Note: PCA is also available in feature_selection.py as apply_pca().
 
 import warnings
 import numpy as np
+import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from ..data.transformation import encode_categorical
 
 # Optional imports
 try:
@@ -21,7 +23,7 @@ except ImportError:
     warnings.warn('umap-learn not installed. UMAP dimensionality reduction will not be available.')
 
 
-def apply_pca(X, n_components=None, variance=0.95):
+def apply_pca(X, n_components=None, variance=0.95, should_encode_categorical=True):
     """
     Apply Principal Component Analysis (PCA).
     
@@ -33,6 +35,8 @@ def apply_pca(X, n_components=None, variance=0.95):
         Number of components. If None, use variance threshold.
     variance : float, default=0.95
         Variance to retain (used if n_components is None)
+    should_encode_categorical : bool, default=True
+        Whether to encode categorical columns using label encoding
     
     Returns
     -------
@@ -41,6 +45,12 @@ def apply_pca(X, n_components=None, variance=0.95):
     pca : PCA
         Fitted PCA object
     """
+    # Handle categorical encoding if needed
+    if should_encode_categorical and isinstance(X, pd.DataFrame):
+        cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+        if cat_cols:
+            X, _ = encode_categorical(X, cat_cols, method='label')
+    
     pca = PCA(n_components=n_components)
     
     if n_components is None:
@@ -54,7 +64,7 @@ def apply_pca(X, n_components=None, variance=0.95):
     return X_pca, pca
 
 
-def apply_tsne(X, n_components=2, perplexity=30.0, random_state=42):
+def apply_tsne(X, n_components=2, perplexity=30.0, random_state=42, should_encode_categorical=True):
     """
     Apply t-Distributed Stochastic Neighbor Embedding (t-SNE).
     
@@ -68,6 +78,8 @@ def apply_tsne(X, n_components=2, perplexity=30.0, random_state=42):
         t-SNE perplexity parameter
     random_state : int, default=42
         Random seed
+    should_encode_categorical : bool, default=True
+        Whether to encode categorical columns using label encoding
     
     Returns
     -------
@@ -76,6 +88,12 @@ def apply_tsne(X, n_components=2, perplexity=30.0, random_state=42):
     tsne : TSNE
         Fitted t-SNE object
     """
+    # Handle categorical encoding if needed
+    if should_encode_categorical and isinstance(X, pd.DataFrame):
+        cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
+        if cat_cols:
+            X, _ = encode_categorical(X, cat_cols, method="label")
+    
     tsne = TSNE(
         n_components=n_components,
         perplexity=perplexity,
@@ -86,7 +104,7 @@ def apply_tsne(X, n_components=2, perplexity=30.0, random_state=42):
     return X_tsne, tsne
 
 
-def apply_umap(X, n_components=2, n_neighbors=15, min_dist=0.1, random_state=42):
+def apply_umap(X, n_components=2, n_neighbors=15, min_dist=0.1, random_state=42, should_encode_categorical=True):
     """
     Apply Uniform Manifold Approximation and Projection (UMAP).
     
@@ -171,4 +189,27 @@ def reduce_dimensions(X, method='pca', **kwargs):
         return apply_umap(X, **kwargs)
     else:
         raise ValueError(f"Unknown dimensionality reduction method: {method}")
+
+
+def apply_dimensionality_reduction(X, method='pca', **kwargs):
+    """
+    Alias for reduce_dimensions for backward compatibility.
+    
+    Parameters
+    ----------
+    X : array-like or pandas.DataFrame
+        Feature data
+    method : {'pca', 'tsne', 'umap'}
+        Dimensionality reduction method
+    **kwargs
+        Additional arguments passed to the specific method
+    
+    Returns
+    -------
+    X_reduced : array-like
+        Reduced data
+    model
+        Fitted reduction model
+    """
+    return reduce_dimensions(X, method=method, **kwargs)
 

@@ -10,6 +10,9 @@ from typing import Any, Dict, Tuple, Optional
 
 import numpy as np
 import pandas as pd
+from ..utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Optional imports
 PYCARET_AVAILABLE = False
@@ -22,15 +25,16 @@ try:
     from pycaret import classification as pycaret_cl
     from pycaret import regression as pycaret_rg
     PYCARET_AVAILABLE = True
-except ImportError:
-    warnings.warn('PyCaret is not installed. PyCaret AutoML will not be available.')
+except (ImportError, RuntimeError):
+    PYCARET_AVAILABLE = False
+    logger.warning('PyCaret is not available. PyCaret AutoML will not be available.')
 
 try:
     import h2o
     from h2o.sklearn import H2OAutoMLClassifier, H2OAutoMLRegressor
     H2O_AVAILABLE = True
 except ImportError:
-    warnings.warn('H2O is not installed. H2O AutoML will not be available.')
+    logger.warning('H2O is not installed. H2O AutoML will not be available.')
 
 
 def run_pycaret_automl(
@@ -38,7 +42,7 @@ def run_pycaret_automl(
     target_column: str,
     problem_type: str = 'classification',
     sort_by: Optional[str] = None,
-    remove_outliers: bool = False,
+
     enable_optimization: bool = False,
     **pycaret_kwargs
 ) -> Tuple[Any, Dict[str, Any]]:
@@ -70,6 +74,12 @@ def run_pycaret_automl(
     if not PYCARET_AVAILABLE:
         raise ImportError('PyCaret is required for PyCaret AutoML')
     
+    # Convert problem_type to lowercase for consistent comparison
+    problem_type = problem_type.lower()
+    
+    # Extract remove_outliers from pycaret_kwargs with default False
+    remove_outliers = pycaret_kwargs.pop('remove_outliers', False)
+    
     # Setup PyCaret
     if problem_type == 'classification':
         pycaret_module = pycaret_cl
@@ -85,7 +95,6 @@ def run_pycaret_automl(
         data=train_df,
         target=target_column,
         remove_outliers=remove_outliers,
-        silent=True,
         verbose=False,
         **pycaret_kwargs
     )
@@ -109,6 +118,66 @@ def run_pycaret_automl(
         'remove_outliers': remove_outliers,
         'enable_optimization': enable_optimization
     }
+
+
+def get_pycaret_feature_importance(
+    train_df: pd.DataFrame,
+    target_column: str,
+    problem_type: str = 'classification',
+    **pycaret_kwargs
+) -> pd.DataFrame:
+    """
+    Get feature importance from PyCaret's setup.
+
+    Parameters
+    ----------
+    train_df : pd.DataFrame
+        Training data.
+    target_column : str
+        Name of the target column.
+    problem_type : {'classification', 'regression'}
+        Type of problem.
+    **pycaret_kwargs
+        Additional keyword arguments passed to PyCaret's setup function.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with feature importances.
+    """
+    if not PYCARET_AVAILABLE:
+        raise ImportError('PyCaret is required for this function.')
+
+    if problem_type == 'classification':
+        pycaret_module = pycaret_cl
+    else:
+        pycaret_module = pycaret_rg
+
+    logger.info("Setting up PyCaret to extract feature importance...")
+    exp = pycaret_module.setup(
+        data=train_df,
+        target=target_column,
+        verbose=False,
+        **pycaret_kwargs
+    )
+
+    # PyCaret automatically calculates feature importance during setup
+    # We can pull this information after setup is complete
+    try:
+        # For classification, this is often available
+        feature_importance_df = pycaret_module.pull()
+        if 'Feature' not in feature_importance_df.columns:
+             # Fallback for some versions or problem types
+            logger.warning("Could not directly pull feature importance. Trying to create a dummy model.")
+            dummy_model = pycaret_module.create_model('dummy', verbose=False)
+            pycaret_module.plot_model(dummy_model, plot='feature', save=True)
+            # This is a workaround and might not be robust
+            # A better approach would be to inspect the experiment object
+            return pd.DataFrame() # Placeholder
+        return feature_importance_df
+    except Exception as e:
+        logger.error(f"Could not extract feature importance from PyCaret: {e}")
+        return pd.DataFrame()
 
 
 def run_h2o_automl(

@@ -68,13 +68,12 @@ def drop_infinite_values(df, inplace=False):
     pandas.DataFrame or None
         If inplace=False, returns cleaned DataFrame
     """
-    # Replace infinite values with NaN
-    df_replaced = df.replace([float('inf'), float('-inf')], float('nan'))
-    
     if inplace:
+        df.replace([float('inf'), float('-inf')], float('nan'), inplace=True)
         df.dropna(inplace=True)
         return None
     else:
+        df_replaced = df.replace([float('inf'), float('-inf')], float('nan'))
         return df_replaced.dropna()
 
 
@@ -103,6 +102,46 @@ def drop_columns(df, columns_to_drop, inplace=False):
         return None
     else:
         return df.drop(columns=columns_to_drop)
+
+
+def remove_outliers(df, columns=None, factor=1.5, inplace=False):
+    """
+    Remove outliers using the Interquartile Range (IQR) method.
+    
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    columns : list, optional
+        Columns to check for outliers. If None, all numeric columns are used.
+    factor : float, default=1.5
+        The IQR factor to use for determining outliers (typically 1.5 or 3.0).
+    inplace : bool, default=False
+        Whether to modify the DataFrame in place.
+    
+    Returns
+    -------
+    pandas.DataFrame or None
+        If inplace=False, returns DataFrame with outliers removed.
+    """
+    if not inplace:
+        df = df.copy()
+    
+    if columns is None:
+        columns = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    for col in columns:
+        if col in df.columns:
+            Q1 = df[col].quantile(0.25)
+            Q3 = df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - factor * IQR
+            upper_bound = Q3 + factor * IQR
+            
+            # Filter rows
+            df.drop(df[(df[col] < lower_bound) | (df[col] > upper_bound)].index, inplace=True)
+            
+    if not inplace:
+        return df
 
 
 def count_null_values(df):
@@ -156,6 +195,7 @@ def count_duplicate_rows(df):
 
 
 def clean_data(df, drop_null=True, drop_duplicates=True, drop_inf=True, 
+               remove_outlier=False, outlier_columns=None, outlier_factor=1.5,
                columns_to_drop=None, inplace=False):
     """
     Perform multiple cleaning operations.
@@ -169,6 +209,12 @@ def clean_data(df, drop_null=True, drop_duplicates=True, drop_inf=True,
         Drop duplicate rows
     drop_inf : bool, default=True
         Drop rows with infinite values
+    remove_outlier : bool, default=False
+        Whether to remove outliers
+    outlier_columns : list, optional
+        Columns to check for outliers
+    outlier_factor : float, default=1.5
+        IQR factor for outliers
     columns_to_drop : list, optional
         Columns to drop
     inplace : bool, default=False
@@ -190,6 +236,9 @@ def clean_data(df, drop_null=True, drop_duplicates=True, drop_inf=True,
     
     if drop_inf:
         drop_infinite_values(df, inplace=True)
+    
+    if remove_outlier:
+        remove_outliers(df, columns=outlier_columns, factor=outlier_factor, inplace=True)
     
     if columns_to_drop:
         drop_columns(df, columns_to_drop, inplace=True)

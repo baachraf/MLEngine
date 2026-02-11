@@ -1,0 +1,64 @@
+# This file defines model comparison experiments that can be run with a single command.
+
+# --- Classification Experiments ---
+
+quick_classification_comparison:
+  description: "A quick check of three fast classifiers with some custom settings."
+  problem_type: Classification
+  sort_by: F1 Score
+  models:
+    - name: RandomForestClassifier
+      params:
+        n_estimators: 150
+        max_depth: 12
+    - name: LogisticRegression
+      params:
+        C: 5.0
+        solver: 'liblinear'
+    - name: SVC
+      # No params specified, so this will use the defaults from model_defaults.yml
+
+full_classification_suite:
+  description: "Run all available classification models with their default parameters."
+  problem_type: Classification
+  sort_by: Accuracy
+  models: null # A null value means "use all available models for this problem type"
+
+grid_search_test:
+  description: "Test grid search hyperparameter tuning with RandomForestClassifier."
+  problem_type: Classification
+  sort_by: Accuracy
+  models:
+    - name: RandomForestClassifier
+      params: {}
+
+
+# --- Regression Experiments ---
+
+robust_regression_comparison:
+  description: "Comparing robust regressors for a noisy dataset."
+  problem_type: Regression
+  sort_by: MAE # Lower is better for Mean Absolute Error
+  models:
+    - name: HuberRegressor
+      params:
+        epsilon: 1.5
+    - name: RANSACRegressor
+    - name: TheilSenRegressor
+
+linear_regression_models:
+  description: "A comparison of linear models with different regularizations."
+  problem_type: Regression
+  sort_by: R2
+  models:
+    - name: LinearRegression
+    - name: Ridge
+      params:
+        alpha: 0.5
+    - name: Lasso
+      params:
+        alpha: 0.1
+    - name: ElasticNet
+      params:
+        alpha: 0.1
+        l1_ratio: 0.7

@@ -13,6 +13,7 @@ import numpy as np
 from scipy import stats
 from sklearn.preprocessing import PowerTransformer, LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split, GroupShuffleSplit
+from ..utils.common import can_convert_to_float
 
 
 def apply_transformation(data, transformation, col_name=None, mode="train", params=None, multiple=False):
@@ -155,7 +156,7 @@ def load_data(file_path, file_type=None):
         file_type = ext.lower().lstrip('.')
     
     if file_type == 'csv':
-        return pd.read_csv(file_path, index_col=0)
+        return pd.read_csv(file_path)
     elif file_type == 'json':
         return pd.read_json(file_path)
     else:
@@ -215,49 +216,65 @@ def custom_split_fn(df, split_column, test_size=0.2, random_state=42):
     return train_df, test_df
 
 
-def split_data_train_test(df, selected_features, selected_targets, 
-                          test_size=0.2, split_method='random', 
+def split_data_train_test(X, y, test_size=0.2, split_method='random',
                           split_column=None, group_column=None, random_state=42):
     """
     Split data into training and testing sets.
     
     Parameters
     ----------
-    df : pandas.DataFrame
-    selected_features : list
-        Feature column names
-    selected_targets : list
-        Target column names
+    X : pandas.DataFrame
+        Feature data.
+    y : pandas.Series or pandas.DataFrame
+        Target data.
     test_size : float, default=0.2
-        Proportion for test set
+        Proportion for test set.
     split_method : {'random', 'custom', 'group_shuffle'}
-        Splitting method
+        Splitting method.
     split_column : str, optional
-        Column for custom split (required for 'custom' method)
+        Column for custom split (required for 'custom' method). Must be present in X or y.
     group_column : str, optional
-        Column for group shuffle split (required for 'group_shuffle' method)
+        Column for group shuffle split (required for 'group_shuffle' method). Must be present in X or y.
     random_state : int, default=42
-        Seed for random number generator
+        Seed for random number generator.
     
     Returns
     -------
     X_train : pandas.DataFrame
     X_test : pandas.DataFrame
-    y_train : pandas.DataFrame
-    y_test : pandas.DataFrame
+    y_train : pandas.Series or pandas.DataFrame
+    y_test : pandas.Series or pandas.DataFrame
     """
+
     if split_method == 'custom' and split_column is not None:
-        train_df, test_df = custom_split_fn(df, split_column, test_size, random_state)
-        X_train = train_df[selected_features]
-        X_test = test_df[selected_features]
-        y_train = train_df[selected_targets]
-        y_test = test_df[selected_targets]
-    
+        # Reconstruct df for custom stratified split if split_column is in X or y
+        # Assuming split_column is either in X or is the target y
+        if split_column in X.columns:
+            stratify_col_data = X[split_column]
+        elif isinstance(y, pd.Series) and split_column == y.name:
+            stratify_col_data = y
+        elif isinstance(y, pd.DataFrame) and split_column in y.columns:
+            stratify_col_data = y[split_column]
+        else:
+            raise ValueError(f"split_column '{split_column}' not found in X or y for custom split.")
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=stratify_col_data
+        )
+
     elif split_method == 'group_shuffle' and group_column is not None:
-        X = df[selected_features]
-        y = df[selected_targets]
-        gss = GroupShuffleSplit(n_splits=1, train_size=1-test_size, random_state=random_state)
-        train_idx, test_idx = next(gss.split(X, y, groups=df[group_column]))
+        # Reconstruct df for group shuffle split if group_column is in X or y
+        if group_column in X.columns:
+            groups_data = X[group_column]
+        elif isinstance(y, pd.Series) and group_column == y.name:
+            groups_data = y
+        elif isinstance(y, pd.DataFrame) and group_column in y.columns:
+            groups_data = y[group_column]
+        else:
+            raise ValueError(f"group_column '{group_column}' not found in X or y for group shuffle split.")
+
+        gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
+        train_idx, test_idx = next(gss.split(X, y, groups=groups_data))
         
         X_train = X.iloc[train_idx]
         X_test = X.iloc[test_idx]
@@ -265,14 +282,11 @@ def split_data_train_test(df, selected_features, selected_targets,
         y_test = y.iloc[test_idx]
     
     else:  # random split
-        X = df[selected_features]
-        y = df[selected_targets]
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=test_size, random_state=random_state
         )
     
     return X_train, X_test, y_train, y_test
-
 
 def make_creating_validations_possible(X_train, X_test, y_train, y_test, 
                                        selected_features=None):
@@ -379,25 +393,6 @@ def generate_transformation_result(original_df, transformed_df,
         })
     
     return pd.DataFrame(summary_data)
-
-
-def can_convert_to_float(value):
-    """
-    Check if a value can be converted to float.
-    
-    Parameters
-    ----------
-    value : any
-    
-    Returns
-    -------
-    bool
-    """
-    try:
-        float(value)
-        return True
-    except (ValueError, TypeError):
-        return False
 
 
 def apply_saved_filter(data, df_columns, df):
@@ -562,14 +557,39 @@ def execute_loaded_prep_config(data, df):
         df_processed = filtered_df
         messages.append(filter_msg)
     
-    # 8. Split data (simplified - returns None for train/test if not configured)
+    # 8. Split data
     train_df = None
     test_df = None
     if data.get("test_size", 0) > 0:
-        # This is a simplified version - original has custom split logic
         test_size = data.get("test_size", 0.2)
         random_state = data.get("random_state", 42)
-        train_df, test_df = train_test_split(df_processed, test_size=test_size, random_state=random_state)
-        messages.append(f"Data split: train={len(train_df)}, test={len(test_df)}")
+        
+        if data.get("custom_split", False) and data.get("selected_column"):
+            # Use custom stratified split
+            if data.get("selected_column") in df_processed.columns:
+                train_df, test_df = custom_split_fn(df_processed, data.get("selected_column"), test_size, random_state)
+                messages.append(f"Custom stratified split applied on '{data.get('selected_column')}'")
+            else:
+                # Fallback to random if column missing
+                train_df, test_df = train_test_split(df_processed, test_size=test_size, random_state=random_state)
+                messages.append(f"Warning: Custom split column not found, used random split")
+                
+        elif data.get("use_group_shuffle", False) and data.get("group_shuffle_column"):
+            # Use group shuffle split
+            if data.get("group_shuffle_column") in df_processed.columns:
+                gss = GroupShuffleSplit(n_splits=1, train_size=1-test_size, random_state=random_state)
+                train_idx, test_idx = next(gss.split(df_processed, groups=df_processed[data.get("group_shuffle_column")]))
+                train_df = df_processed.iloc[train_idx]
+                test_df = df_processed.iloc[test_idx]
+                messages.append(f"Group shuffle split applied on '{data.get('group_shuffle_column')}'")
+            else:
+                # Fallback to random
+                train_df, test_df = train_test_split(df_processed, test_size=test_size, random_state=random_state)
+                messages.append(f"Warning: Group column not found, used random split")
+                
+        else:
+            # Default random split
+            train_df, test_df = train_test_split(df_processed, test_size=test_size, random_state=random_state)
+            messages.append(f"Random split applied (train={len(train_df)}, test={len(test_df)})")
     
     return df_processed, train_df, test_df, messages

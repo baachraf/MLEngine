@@ -8,6 +8,8 @@ Functions for feature selection, engineering, and dimensionality reduction.
 import warnings
 import pandas as pd
 import numpy as np
+import yaml
+import os
 from sklearn.feature_selection import (
     SelectKBest, mutual_info_classif, mutual_info_regression,
     f_classif, f_regression, chi2, RFE, VarianceThreshold
@@ -16,6 +18,10 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from ..utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 # Optional imports for advanced feature selection methods
 try:
     import xgboost as xgb
@@ -23,7 +29,7 @@ try:
 except ImportError:
     xgb = None
     XGBOOST_AVAILABLE = False
-    warnings.warn('xgboost not installed. Some feature selection methods may not be available.')
+    logger.warning('xgboost not installed. Some feature selection methods may not be available.')
 
 try:
     from boruta import BorutaPy
@@ -31,7 +37,7 @@ try:
 except ImportError:
     BorutaPy = None
     BORUTA_AVAILABLE = False
-    warnings.warn('boruta not installed. Boruta feature selection will not be available.')
+    logger.warning('boruta not installed. Boruta feature selection will not be available.')
 
 
 def variance_feature_selection(X, threshold=0.0):
@@ -50,6 +56,17 @@ def variance_feature_selection(X, threshold=0.0):
     selected_features : array-like
         Indices of selected features
     """
+    from ..data.transformation import encode_categorical
+    
+    # Handle categorical columns in DataFrames
+    if isinstance(X, pd.DataFrame):
+        # Identify categorical columns
+        cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+        if cat_cols:
+            # Encode categorical columns using label encoding
+            X_encoded, _ = encode_categorical(X, cat_cols, method='label')
+            X = X_encoded
+    
     selector = VarianceThreshold(threshold=threshold)
     selector.fit(X)
     return selector.get_support(indices=True)
@@ -78,6 +95,17 @@ def select_k_best_features(X, y, k=10, score_func='mutual_info', problem_type='c
     scores : array-like
         Feature scores
     """
+    from ..data.transformation import encode_categorical
+    
+    # Handle categorical columns in DataFrames
+    if isinstance(X, pd.DataFrame):
+        # Identify categorical columns
+        cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+        if cat_cols:
+            # Encode categorical columns using label encoding
+            X_encoded, _ = encode_categorical(X, cat_cols, method='label')
+            X = X_encoded
+    
     # Map score function names to actual functions
     score_funcs = {
         'mutual_info': mutual_info_classif if problem_type == 'classification' else mutual_info_regression,
@@ -96,7 +124,7 @@ def select_k_best_features(X, y, k=10, score_func='mutual_info', problem_type='c
         if (X < 0).any().any():
             raise ValueError("Chi-squared test requires non-negative values")
     
-    selector = SelectKBest(score_function=score_function, k=k)
+    selector = SelectKBest(score_func=score_function, k=k)
     selector.fit(X, y)
     
     return selector.get_support(indices=True), selector.scores_
@@ -131,6 +159,17 @@ def recursive_feature_elimination(X, y, estimator=None, n_features_to_select=Non
     rankings : array-like
         Feature rankings (1 = best)
     """
+    from ..data.transformation import encode_categorical
+    
+    # Handle categorical columns in DataFrames
+    if isinstance(X, pd.DataFrame):
+        # Identify categorical columns
+        cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+        if cat_cols:
+            # Encode categorical columns using label encoding
+            X_encoded, _ = encode_categorical(X, cat_cols, method='label')
+            X = X_encoded
+    
     if estimator is None:
         if problem_type == 'classification':
             estimator = RandomForestClassifier(n_estimators=100, random_state=42, **estimator_params)
@@ -216,8 +255,19 @@ def boruta_feature_selection(X, y, problem_type='classification', max_iter=100, 
     ImportError
         If boruta package is not installed
     """
+    from ..data.transformation import encode_categorical
+    
     if not BORUTA_AVAILABLE:
         raise ImportError('boruta package is required for boruta_feature_selection')
+    
+    # Handle categorical columns in DataFrames
+    if isinstance(X, pd.DataFrame):
+        # Identify categorical columns
+        cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+        if cat_cols:
+            # Encode categorical columns using label encoding
+            X_encoded, _ = encode_categorical(X, cat_cols, method='label')
+            X = X_encoded
     
     # Convert to numpy arrays if needed
     X_arr = X.values if isinstance(X, pd.DataFrame) else X
@@ -241,246 +291,123 @@ def boruta_feature_selection(X, y, problem_type='classification', max_iter=100, 
     # Fit Boruta
     boruta.fit(X_arr, y_arr)
     
-    return boruta.support_, boruta.importances_
+    # Compute mean importance across iterations
+    importances = boruta.importance_history_.mean(axis=0) if hasattr(boruta, 'importance_history_') else boruta.ranking_
+    return boruta.support_, importances
 
 
-def calculate_polynomial_features_count(n_features, degree, interaction_only=False, include_bias=False):
+def run_feature_selection_experiment(
+    experiment_name: str,
+    X: pd.DataFrame,
+    y: pd.Series,
+    problem_type: str,
+    config_path: str = None
+) -> dict:
     """
-    Calculate number of polynomial features.
-    
+    Run a feature selection experiment from a YAML configuration file.
+
     Parameters
     ----------
-    n_features : int
-        Number of input features
-    degree : int
-        Polynomial degree
-    interaction_only : bool, default=False
-        Whether to include only interaction terms
-    include_bias : bool, default=False
-        Whether to include bias term
-    
-    Returns
-    -------
-    int
-        Number of polynomial features
-    """
-    # Simple calculation - exact formula depends on implementation
-    # This is approximate
-    if interaction_only:
-        # Only interaction terms
-        count = 0
-        for d in range(1, degree + 1):
-            if d == 1:
-                count += n_features
-            else:
-                # Combinations of features for interaction
-                # This is simplified
-                count += np.math.comb(n_features, d)
-    else:
-        # All polynomial terms
-        count = np.math.comb(n_features + degree, degree) - (0 if include_bias else 1)
-    
-    return count
-
-
-def create_polynomial_features(X, degree=2, interaction_only=False, include_bias=False, 
-                               return_poly=False):
-    """
-    Create polynomial and interaction features.
-    
-    Parameters
-    ----------
-    X : array-like or pandas.DataFrame
-        Feature data
-    degree : int, default=2
-        Polynomial degree
-    interaction_only : bool, default=False
-        Whether to include only interaction terms
-    include_bias : bool, default=False
-        Whether to include bias term
-    return_poly : bool, default=False
-        Whether to return the PolynomialFeatures object
-    
-    Returns
-    -------
-    X_poly : array-like or pandas.DataFrame
-        Polynomial features
-    poly : PolynomialFeatures, optional
-        Fitted PolynomialFeatures object (only if return_poly=True)
-    """
-    poly = PolynomialFeatures(
-        degree=degree,
-        interaction_only=interaction_only,
-        include_bias=include_bias
-    )
-    
-    X_poly = poly.fit_transform(X)
-    
-    # Create column names if X is a DataFrame
-    if isinstance(X, pd.DataFrame):
-        feature_names = poly.get_feature_names_out(X.columns)
-        X_poly = pd.DataFrame(X_poly, columns=feature_names, index=X.index)
-    
-    if return_poly:
-        return X_poly, poly
-    else:
-        return X_poly
-
-
-def apply_polynomial_features(df, degree, include_bias, interaction_only, 
-                              selected_cols, poly=None):
-    """
-    Apply polynomial feature transformation to selected columns.
-    
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Input DataFrame
-    degree : int
-        Polynomial degree
-    include_bias : bool
-        Whether to include bias term
-    interaction_only : bool
-        Whether to include only interaction terms
-    selected_cols : list
-        Columns to transform
-    poly : PolynomialFeatures, optional
-        Pre-fitted PolynomialFeatures object
-    
-    Returns
-    -------
-    transformed_df : pandas.DataFrame
-        DataFrame with polynomial features
-    poly : PolynomialFeatures
-        Fitted PolynomialFeatures object
-    """
-    X = df[selected_cols]
-    
-    if poly is None:
-        poly = PolynomialFeatures(
-            degree=degree,
-            include_bias=include_bias,
-            interaction_only=interaction_only
-        )
-        X_poly = poly.fit_transform(X)
-    else:
-        X_poly = poly.transform(X)
-    
-    # Create column names
-    feature_names = poly.get_feature_names_out(selected_cols)
-    
-    # Create new DataFrame with polynomial features
-    poly_df = pd.DataFrame(X_poly, columns=feature_names, index=df.index)
-    
-    # Drop original columns and concatenate polynomial features
-    transformed_df = df.drop(columns=selected_cols)
-    transformed_df = pd.concat([transformed_df, poly_df], axis=1)
-    
-    return transformed_df, poly
-
-
-def select_features_by_method(X, y, method='variance', problem_type='classification', **kwargs):
-    """
-    Select features using specified method.
-    
-    Parameters
-    ----------
-    X : array-like or pandas.DataFrame
-        Feature data
-    y : array-like
-        Target data
-    method : {'variance', 'kbest', 'rfe', 'boruta', 'pca'}
-        Feature selection method
+    experiment_name : str
+        The name of the experiment to run.
+    X : pd.DataFrame
+        Feature data.
+    y : pd.Series
+        Target data.
     problem_type : {'classification', 'regression'}
-        Problem type
-    **kwargs : dict
-        Method-specific parameters
-    
+        The type of machine learning problem.
+    config_path : str, optional
+        Path to the feature selection experiments YAML file.
+
     Returns
     -------
-    selected_indices : array-like
-        Indices of selected features
-    additional_info : dict
-        Method-specific additional information
+    dict
+        A dictionary where keys are method names and values are lists of selected feature names.
     """
-    if method == 'variance':
-        threshold = kwargs.get('threshold', 0.0)
-        selected_indices = variance_feature_selection(X, threshold)
-        additional_info = {'method': 'variance', 'threshold': threshold}
-    
-    elif method == 'kbest':
-        k = kwargs.get('k', 10)
-        score_func = kwargs.get('score_func', 'mutual_info')
-        selected_indices, scores = select_k_best_features(
-            X, y, k=k, score_func=score_func, problem_type=problem_type
-        )
-        additional_info = {
-            'method': 'kbest',
-            'k': k,
-            'score_func': score_func,
-            'scores': scores
-        }
-    
-    elif method == 'rfe':
-        estimator = kwargs.get('estimator')
-        n_features = kwargs.get('n_features_to_select')
-        step = kwargs.get('step', 1)
-        selected_indices, rankings = recursive_feature_elimination(
-            X, y, estimator=estimator, n_features_to_select=n_features,
-            step=step, problem_type=problem_type
-        )
-        additional_info = {
-            'method': 'rfe',
-            'n_features_to_select': n_features,
-            'step': step,
-            'rankings': rankings
-        }
-    
-    elif method == 'boruta':
-        max_iter = kwargs.get('max_iter', 100)
-        random_state = kwargs.get('random_state', 42)
-        selected_indices, importances = boruta_feature_selection(
-            X, y, problem_type=problem_type, max_iter=max_iter, random_state=random_state
-        )
-        additional_info = {
-            'method': 'boruta',
-            'max_iter': max_iter,
-            'importances': importances
-        }
-    
-    elif method == 'pca':
-        n_components = kwargs.get('n_components', None)
-        variance = kwargs.get('variance', 0.95)
-        selected_indices, pca_info = apply_pca(
-            X, n_components=n_components, variance=variance, return_indices=True
-        )
-        additional_info = {
-            'method': 'pca',
-            'n_components': n_components,
-            'variance': variance,
-            'pca_info': pca_info
-        }
-    
-    else:
-        raise ValueError(f"Unknown feature selection method: {method}")
-    
-    return selected_indices, additional_info
+    if config_path is None:
+        # Try finding it relative to the module (dev mode)
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+        config_path = os.path.join(base_dir, 'configs', 'feature_selection_experiments.yml')
+        
+        if not os.path.exists(config_path):
+            # Try finding it relative to current working directory
+            cwd = os.getcwd()
+            potential_path = os.path.join(cwd, '..', 'configs', 'feature_selection_experiments.yml')
+            if os.path.exists(potential_path):
+                config_path = potential_path
+            else:
+                 potential_path = os.path.join(cwd, 'configs', 'feature_selection_experiments.yml')
+                 if os.path.exists(potential_path):
+                     config_path = potential_path
 
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Feature selection configuration file not found at {config_path}")
 
-def apply_pca(X, n_components=None, variance=0.95, return_indices=False):
+    with open(config_path, 'r') as f:
+        experiments = yaml.safe_load(f)
+
+    if experiment_name not in experiments:
+        raise ValueError(f"Experiment '{experiment_name}' not found in {config_path}")
+
+    exp_config = experiments[experiment_name]
+    logger.info(f"Running feature selection experiment: {exp_config.get('description', experiment_name)}")
+
+    # Normalize problem_type to lowercase for case-insensitive matching
+    problem_type = problem_type.lower()
+    
+    results = {}
+    
+    for method_spec in exp_config['methods']:
+        method_name = method_spec['name']
+        params = method_spec.get('params', {})
+        logger.info(f"Running method: {method_name} with params: {params}")
+        
+        try:
+            if method_name == 'variance':
+                indices = variance_feature_selection(X, **params)
+                results[method_name] = X.columns[indices].tolist()
+            
+            elif method_name == 'kbest':
+                indices, _ = select_k_best_features(X, y, problem_type=problem_type, **params)
+                results[method_name] = X.columns[indices].tolist()
+
+            elif method_name == 'rfe':
+                estimator_name = params.pop('estimator', 'RandomForestClassifier')
+                if estimator_name == 'RandomForestClassifier':
+                    estimator = RandomForestClassifier()
+                elif estimator_name == 'RandomForestRegressor':
+                    estimator = RandomForestRegressor()
+                else:
+                    raise ValueError(f"Unsupported estimator for RFE: {estimator_name}")
+                
+                indices, _ = recursive_feature_elimination(X, y, estimator=estimator, problem_type=problem_type, **params)
+                results[method_name] = X.columns[indices].tolist()
+
+            elif method_name == 'boruta':
+                indices, _ = boruta_feature_selection(X, y, problem_type=problem_type, **params)
+                results[method_name] = X.columns[indices].tolist()
+
+        except Exception as e:
+            logger.error(f"Failed to run method '{method_name}': {e}")
+            results[method_name] = f"Error: {e}"
+            
+    return results
+
+def apply_pca(X, n_components=None, variance=0.95, should_encode_categorical=True):
     """
-    Apply Principal Component Analysis.
+    Apply Principal Component Analysis (PCA).
+    Wrapper for reduction.apply_pca to ensure availability in this module.
     
     Parameters
     ----------
     X : array-like or pandas.DataFrame
         Feature data
     n_components : int, optional
-        Number of components. If None, use variance threshold.
+        Number of components
     variance : float, default=0.95
-        Variance to retain (used if n_components is None)
-    return_indices : bool, default=False
-        Whether to return original feature indices (not applicable for PCA)
+        Variance to retain
+    should_encode_categorical : bool, default=True
+        Whether to encode categorical columns using label encoding
     
     Returns
     -------
@@ -489,73 +416,6 @@ def apply_pca(X, n_components=None, variance=0.95, return_indices=False):
     pca : PCA
         Fitted PCA object
     """
-    pca = PCA(n_components=n_components)
-    
-    if n_components is None:
-        # Fit PCA to determine number of components for variance threshold
-        pca.fit(X)
-        cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
-        n_components = np.argmax(cumulative_variance >= variance) + 1
-        pca = PCA(n_components=n_components)
-    
-    X_pca = pca.fit_transform(X)
-    
-    if return_indices:
-        # For PCA, we don't have original feature indices
-        # Return component indices instead
-        indices = np.arange(n_components)
-        pca_info = {
-            'explained_variance_ratio': pca.explained_variance_ratio_,
-            'components': pca.components_,
-            'n_components': n_components,
-            'cumulative_variance': np.cumsum(pca.explained_variance_ratio_)
-        }
-        return indices, pca_info
-    else:
-        return X_pca, pca
-
-
-def generate_x_train_y_train_test(train_df, test_df, selected_features, selected_targets):
-    """
-    Generate X_train, X_test, y_train, y_test from train and test dataframes.
-    
-    Parameters
-    ----------
-    train_df : pandas.DataFrame
-        Training dataframe
-    test_df : pandas.DataFrame
-        Test dataframe
-    selected_features : list
-        Names of selected feature columns
-    selected_targets : list
-        Names of target columns
-    
-    Returns
-    -------
-    dict
-        Dictionary with keys: X_train, X_test, y_train, y_test, train_df, test_df
-    """
-    # Filter columns that exist in dataframes
-    train_features = [f for f in selected_features if f in train_df.columns]
-    test_features = [f for f in selected_features if f in test_df.columns]
-    train_targets = [t for t in selected_targets if t in train_df.columns]
-    test_targets = [t for t in selected_targets if t in test_df.columns]
-    
-    X_train = train_df[train_features]
-    X_test = test_df[test_features]
-    y_train = train_df[train_targets]
-    y_test = test_df[test_targets]
-    
-    train_df_filtered = train_df[train_features + train_targets]
-    test_df_filtered = test_df[test_features + test_targets]
-    
-    return {
-        'X_train': X_train,
-        'X_test': X_test,
-        'y_train': y_train,
-        'y_test': y_test,
-        'train_df': train_df_filtered,
-        'test_df': test_df_filtered,
-        'selected_features': train_features,
-        'selected_targets': train_targets
-    }
+    # Import locally to avoid circular imports if reduction imports selection
+    from .reduction import apply_pca as _apply_pca
+    return _apply_pca(X, n_components, variance, should_encode_categorical)

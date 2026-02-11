@@ -1,0 +1,25 @@
+# This file defines feature selection experiments.
+# Each key is an experiment that can be run.
+
+default_comparison:
+  description: "A standard comparison of Variance, K-Best, and RFE methods."
+  methods:
+    - name: variance
+      params:
+        threshold: 0.01
+    - name: kbest
+      params:
+        k: 10
+        score_func: 'f_classif' # Use 'f_regression' for regression problems
+    - name: rfe
+      params:
+        estimator: 'RandomForestClassifier' # Use 'RandomForestRegressor' for regression
+        n_features_to_select: 15
+        step: 1
+
+boruta_only:
+  description: "A run using only the Boruta feature selection algorithm."
+  methods:
+    - name: boruta
+      params:
+        max_iter: 100

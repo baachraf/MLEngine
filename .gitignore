@@ -1,1 +1,31 @@
 /ML_Engine.egg-info/
+examples/dataset/
+examples/outputs/
+results/
+*.pyc
+__pycache__/
+*.log
+*.png
+*.html
+.ipynb_checkpoints/
+/Internal_docs/
+
+# IDE and editor files
+.idea/
+*.iml
+.vscode/
+
+# Python cache and virtual environments
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+*.egg-info/
+
+# Testing and documentation build artifacts
+.pytest_cache/
+ML_Engine/docs/build/
+

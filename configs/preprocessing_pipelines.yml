@@ -1,0 +1,23 @@
+# Preprocessing Pipelines
+
+default_classification:
+  drop_null: true
+  drop_duplicates: true
+  drop_inf: true
+  label_encoded_columns: []
+  one_hot_encoded_columns: []
+  normalization_technique: 'StandardScaler'
+  test_size: 0.2
+  problem_type: "Classification"
+  imbalance: false
+
+default_regression:
+  drop_null: true
+  drop_duplicates: true
+  drop_inf: true
+  label_encoded_columns: []
+  one_hot_encoded_columns: []
+  normalization_technique: 'StandardScaler'
+  test_size: 0.2
+  problem_type: "Regression"
+  imbalance: false

@@ -11,6 +11,7 @@ setup(
         "numpy",
         "scikit-learn",
         "scipy",
+        "PyYAML",
     ],
     extras_require={
         "automl": ["pycaret", "h2o"],

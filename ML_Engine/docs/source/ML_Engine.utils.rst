@@ -24,3 +24,11 @@ ML\_Engine.utils.docs module
    :members:
    :undoc-members:
    :show-inheritance:
+
+ML\_Engine.utils.logger module
+------------------------------
+
+.. automodule:: ML_Engine.utils.logger
+   :members:
+   :undoc-members:
+   :show-inheritance:

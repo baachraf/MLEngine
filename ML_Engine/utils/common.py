@@ -15,35 +15,6 @@ from typing import Any, Union, List, Dict, Optional, Callable
 # Functions imported from original util.utils (stubs/implementations)
 # ----------------------------------------------------------------------
 
-def prepare_lds_weights(y: np.ndarray, **kwargs) -> np.ndarray:
-    """
-    Compute Label Distribution Smoothing (LDS) weights for imbalanced data.
-    
-    Parameters
-    ----------
-    y : np.ndarray
-        Target labels
-    
-    Returns
-    -------
-    np.ndarray
-        Sample weights
-    """
-    # Default implementation: return uniform weights
-    warnings.warn("prepare_lds_weights is not fully implemented; returning uniform weights")
-    return np.ones_like(y, dtype=float)
-
-
-class CustomModel:
-    """Placeholder for custom model class from original code."""
-    pass
-
-
-def train_main(model, X, y, **kwargs):
-    """Placeholder for train_main function."""
-    warnings.warn("train_main is not implemented")
-    return model
-
 
 def get_torch_device():
     """Get PyTorch device (CPU/GPU)."""
@@ -53,26 +24,6 @@ def get_torch_device():
     except ImportError:
         warnings.warn("PyTorch not installed")
         return None
-
-
-def get_class_weights(y: np.ndarray, **kwargs) -> np.ndarray:
-    """
-    Compute class weights for imbalanced classification.
-    
-    Parameters
-    ----------
-    y : np.ndarray
-        Class labels
-    
-    Returns
-    -------
-    np.ndarray
-        Weight for each class
-    """
-    from sklearn.utils.class_weight import compute_class_weight
-    classes = np.unique(y)
-    weights = compute_class_weight('balanced', classes=classes, y=y)
-    return dict(zip(classes, weights))
 
 
 def can_convert_to_float(value: Any) -> bool:

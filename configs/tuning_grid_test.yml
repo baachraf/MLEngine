@@ -1,0 +1,11 @@
+# Small grid for testing grid search
+RandomForestClassifier:
+  n_estimators:
+    type: cat
+    value: [50, 100]
+  max_depth:
+    type: cat
+    value: [5, 10]
+  criterion:
+    type: cat
+    value: ['gini', 'entropy']

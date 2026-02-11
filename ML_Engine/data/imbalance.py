@@ -256,34 +256,100 @@ def check_imbalance_ratio(y, threshold=0.5):
 
 
 def prepare_lds_weights(y, **kwargs):
+
+
     """
-    Prepare weights for Label Distribution Smoothing.
+
+
+    Prepare weights for Label Distribution Smoothing using KDE.
+
+
     
+
+
     Parameters
+
+
     ----------
+
+
     y : array-like
+
+
         Target values
+
+
     **kwargs : dict
-        Additional parameters for LDS
+
+
+        Additional parameters for KDE (bandwidth, kernel)
+
+
     
+
+
     Returns
+
+
     -------
+
+
     array-like
+
+
         Sample weights
+
+
     """
-    if not IBLR_AVAILABLE:
-        raise ImportError("ImbalancedLearningRegression is required for LDS")
+
+
+    # This uses a simplified KDE implementation for weight estimation
+
+
+    # This allows weight calculation even if ImbalancedLearningRegression is not installed
+
+
     
-    # This is a simplified version
-    # In practice, you would use the actual LDS implementation
+
+
     y_series = pd.Series(y)
-    kernel = kwargs.get('kernel', 'gaussian')
-    bandwidth = kwargs.get('bandwidth', 1.0)
+
+
+    # Default bandwidth is None (silverman's rule), or user can provide float
+
+
+    bandwidth = kwargs.get('bandwidth', None) 
+
+
     
+
+
     # Simple kernel density estimation
+
+
     from scipy import stats
-    kde = stats.gaussian_kde(y_series, bw_method=bandwidth)
-    weights = 1.0 / kde(y_series)
-    weights = weights / weights.mean()  # Normalize
-    
-    return weights
+
+
+    try:
+
+
+        kde = stats.gaussian_kde(y_series, bw_method=bandwidth)
+
+
+        weights = 1.0 / kde(y_series)
+
+
+        weights = weights / weights.mean()  # Normalize
+
+
+        return weights
+
+
+    except Exception as e:
+
+
+        warnings.warn(f"Failed to compute LDS weights: {e}")
+
+
+        return np.ones(len(y))
+

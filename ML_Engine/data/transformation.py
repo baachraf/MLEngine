@@ -12,27 +12,41 @@ from sklearn.preprocessing import (
     LabelEncoder, OneHotEncoder, PowerTransformer
 )
 from scipy import stats
+from typing import List, Tuple, Any
 
-
-def apply_scaling(data, scaler_type='StandardScaler', return_scaler=False):
+def apply_feature_selection(df: pd.DataFrame, selected_features: List[str]) -> pd.DataFrame:
     """
-    Apply scaling transformation to data.
-    
+    Filters a DataFrame to include only the selected features.
+
     Parameters
     ----------
-    data : array-like or pandas.DataFrame
-        Data to scale
-    scaler_type : {'StandardScaler', 'MinMaxScaler', 'Normalizer', 'RobustScaler'}
-        Type of scaler to use
-    return_scaler : bool, default=False
-        Whether to return the fitted scaler object
-    
+    df : pd.DataFrame
+        The input DataFrame.
+    selected_features : list of str
+        A list of column names to keep.
+
     Returns
     -------
-    scaled_data : array-like or pandas.DataFrame
-        Scaled data
-    scaler : object, optional
-        Fitted scaler (only if return_scaler=True)
+    pd.DataFrame
+        A new DataFrame containing only the selected feature columns.
+    """
+    return df[selected_features].copy()
+
+def fit_and_apply_scaling(data: pd.DataFrame, scaler_type: str = 'StandardScaler') -> Tuple[pd.DataFrame, Any]:
+    """
+    Fit a scaler and apply it to the data.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Data to scale.
+    scaler_type : {'StandardScaler', 'MinMaxScaler', 'Normalizer', 'RobustScaler'}
+        Type of scaler to use.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the scaled data (as a DataFrame) and the fitted scaler object.
     """
     if scaler_type == "StandardScaler":
         scaler = StandardScaler()
@@ -46,44 +60,59 @@ def apply_scaling(data, scaler_type='StandardScaler', return_scaler=False):
         raise ValueError(f"Unknown scaler type: {scaler_type}")
     
     scaled_data = scaler.fit_transform(data)
+    scaled_df = pd.DataFrame(scaled_data, index=data.index, columns=data.columns)
     
-    if return_scaler:
-        return scaled_data, scaler
-    else:
-        return scaled_data
+    return scaled_df, scaler
 
-
-def apply_label_encoding(df, columns, return_encoders=False):
+def apply_scaler(data: pd.DataFrame, scaler: Any) -> pd.DataFrame:
     """
-    Apply label encoding to categorical columns.
+    Apply a pre-fitted scaler to new data.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Data to transform.
+    scaler : Any
+        A pre-fitted scikit-learn scaler object.
+
+    Returns
+    -------
+    pd.DataFrame
+        The transformed data as a DataFrame.
+    """
+    transformed_data = scaler.transform(data)
+    return pd.DataFrame(transformed_data, index=data.index, columns=data.columns)
+
+def apply_label_encoding(df, columns):
+    """
+    Apply label encoding to categorical columns and return the mappings.
     
     Parameters
     ----------
     df : pandas.DataFrame
     columns : list
         Columns to encode
-    return_encoders : bool, default=False
-        Whether to return the fitted label encoders
     
     Returns
     -------
     encoded_df : pandas.DataFrame
         DataFrame with encoded columns
-    encoders : dict, optional
-        Dictionary of fitted LabelEncoders (only if return_encoders=True)
+    mappings : dict
+        A dictionary where keys are column names and values are another
+        dictionary mapping original labels to their encoded integer values.
+        e.g., {'col_name': {'cat_A': 0, 'cat_B': 1}}
     """
     encoded_df = df.copy()
-    encoders = {}
+    mappings = {}
     
     for col in columns:
         le = LabelEncoder()
         encoded_df[col] = le.fit_transform(encoded_df[col].astype(str))
-        encoders[col] = le
-    
-    if return_encoders:
-        return encoded_df, encoders
-    else:
-        return encoded_df
+        
+        # Create a mapping from original class names to encoded values
+        mappings[col] = {cls: int(val) for cls, val in zip(le.classes_, le.transform(le.classes_))}
+        
+    return encoded_df, mappings
 
 
 def apply_saved_label_encoding(df, columns, saved_mappings):
@@ -130,12 +159,19 @@ def apply_saved_label_encoding(df, columns, saved_mappings):
         unknown_values = unique_values - known_values
         
         if unknown_values:
-            raise ValueError(
-                f"Column '{col}' contains values not in saved mapping: {unknown_values}"
+            # Warn about unknown values and assign -1
+            import warnings
+            warnings.warn(
+                f"Column '{col}' contains values not in saved mapping: {unknown_values}. "
+                f"Assigning -1 to unknown values."
             )
-        
-        # Apply mapping
-        encoded_df[col] = col_values.map(mapping)
+            # Create mapping with default value -1 for unknown values
+            def map_with_unknown(val):
+                return mapping.get(val, -1)
+            encoded_df[col] = col_values.map(map_with_unknown)
+        else:
+            # Apply mapping normally
+            encoded_df[col] = col_values.map(mapping)
     
     return encoded_df
 
@@ -162,7 +198,7 @@ def apply_one_hot_encoding(df, columns, return_encoder=False):
     encoded_df = df.copy()
     
     for col in columns:
-        ohc = OneHotEncoder(sparse_output=False)
+        ohc = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
         one_hot_encoded = ohc.fit_transform(encoded_df[[col]])
         
         # Create column names
@@ -207,139 +243,3 @@ def encode_categorical(df, columns, method='label', **kwargs):
         return apply_one_hot_encoding(df, columns, **kwargs)
     else:
         raise ValueError(f"Unknown encoding method: {method}")
-
-
-def analyze_distribution(data):
-    """
-    Analyze distribution of data.
-    
-    Parameters
-    ----------
-    data : pandas.Series or array-like
-    
-    Returns
-    -------
-    dict
-        Distribution statistics
-    """
-    data = pd.Series(data) if not isinstance(data, pd.Series) else data
-    
-    stats_dict = {
-        'mean': data.mean(),
-        'std': data.std(),
-        'min': data.min(),
-        'max': data.max(),
-        'skewness': data.skew(),
-        'kurtosis': data.kurtosis(),
-        'median': data.median(),
-        'q1': data.quantile(0.25),
-        'q3': data.quantile(0.75),
-    }
-    
-    return stats_dict
-
-
-def check_distribution_normality(data, test='shapiro', sample_limit=5000):
-    """
-    Test normality of distribution.
-    
-    Parameters
-    ----------
-    data : pandas.Series or array-like
-    test : {'shapiro', 'anderson', 'ks'}
-        Normality test to use
-    sample_limit : int, default=5000
-        Maximum sample size for Shapiro-Wilk test
-    
-    Returns
-    -------
-    dict
-        Test results
-    """
-    data = pd.Series(data) if not isinstance(data, pd.Series) else data
-    data = data.dropna()
-    
-    if len(data) < 3:
-        return {'normal': False, 'p_value': 0, 'statistic': 0, 'message': 'Insufficient data'}
-    
-    if test == 'shapiro':
-        # Limit sample size for Shapiro-Wilk
-        sample_size = min(len(data), sample_limit)
-        sample_data = data.sample(sample_size) if len(data) > sample_size else data
-        statistic, p_value = stats.shapiro(sample_data)
-        normal = p_value > 0.05
-    
-    elif test == 'anderson':
-        result = stats.anderson(data)
-        statistic = result.statistic
-        # Compare with critical values
-        normal = statistic < result.critical_values[2]  # 5% significance level
-        p_value = None  # Anderson-Darling doesn't provide p-value
-    
-    elif test == 'ks':
-        # Kolmogorov-Smirnov test against normal distribution
-        norm_data = (data - data.mean()) / data.std()
-        statistic, p_value = stats.kstest(norm_data, 'norm')
-        normal = p_value > 0.05
-    
-    else:
-        raise ValueError(f"Unknown normality test: {test}")
-    
-    return {
-        'normal': normal,
-        'p_value': p_value,
-        'statistic': statistic,
-        'test': test
-    }
-
-
-def suggest_transformation(data):
-    """
-    Suggest transformation based on distribution characteristics.
-    
-    Parameters
-    ----------
-    data : pandas.Series or array-like
-    
-    Returns
-    -------
-    str
-        Suggested transformation
-    """
-    stats = analyze_distribution(data)
-    skewness = stats['skewness']
-    
-    if abs(skewness) < 0.5:
-        return 'None'  # Already fairly symmetric
-    elif skewness > 1:
-        # Right skewed
-        if data.min() > 0:
-            return 'Log'
-        else:
-            return 'Yeo-Johnson'
-    elif skewness < -1:
-        # Left skewed
-        return 'Square'  # Or other transformations for left skew
-    else:
-        return 'Yeo-Johnson'  # General purpose
-
-
-def get_available_transformations():
-    """
-    Get list of available transformations.
-    
-    Returns
-    -------
-    list
-        Available transformation names
-    """
-    return [
-        'None',
-        'Log',
-        'Square Root',
-        'Square',
-        'Cube',
-        'Box-Cox',
-        'Yeo-Johnson',
-        'Reciprocal'
-    ]

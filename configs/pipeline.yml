@@ -1,0 +1,184 @@
+# ==========================================
+# EXPERIMENT 1: Simple Linear Regression
+# ==========================================
+simple_regression_test:
+  description: "A baseline test using a single algorithm with default settings."
+  
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['hours-per-week']
+    drop_columns: ['income']
+  
+  feature_selection:
+    run: false # Skip this step
+
+  training:
+    backend: scikit-learn
+    problem_type: Regression
+    experiment: 'linear_regression_models' # From experiments.yml
+
+  evaluation:
+    metrics: ['R2', 'MAE']
+
+# =================================================================
+# EXPERIMENT 2: Complex Classification with Feature Selection Comparison
+# =================================================================
+advanced_classification_pipeline:
+  description: "Compare multiple classifiers on different feature sets."
+  
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['income']
+    drop_columns: []
+  
+  feature_selection:
+    run: true
+    experiment: 'default_comparison' # From feature_selection_experiments.yml
+  
+  training:
+    backend: scikit-learn
+    problem_type: Classification
+    experiment: 'quick_classification_comparison' # From experiments.yml
+  
+  evaluation:
+    metrics: ['Accuracy', 'F1 Score', 'Precision']
+
+# ========================================================
+# EXPERIMENT 3: Full AutoML with PyCaret
+# ========================================================
+pycaret_automl_run:
+  description: "Let PyCaret handle everything from feature selection to model choice."
+  
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['income']
+    drop_columns: []
+  
+  feature_selection:
+    run: false # PyCaret will handle this internally
+
+  training:
+    backend: pycaret
+    problem_type: Classification
+    pycaret_setup_args:
+      remove_outliers: false
+
+  evaluation:
+    # PyCaret generates its own report
+
+# ========================================================
+# EXPERIMENT 4: Full Classification Suite
+# ========================================================
+full_classification_suite:
+  description: "Run all available classification models with default parameters."
+  
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['income']
+    drop_columns: []
+  
+  feature_selection:
+    run: false # Run without feature selection for baseline comparison
+
+  training:
+    backend: scikit-learn
+    problem_type: Classification
+    experiment: 'full_classification_suite' # From experiments.yml
+  
+  evaluation:
+    metrics: ['Accuracy', 'F1 Score', 'Precision', 'Recall']
+
+# ========================================================
+# EXPERIMENT 5: Classification with Boruta Feature Selection
+# ========================================================
+classification_boruta:
+  description: "Classification using only Boruta feature selection algorithm."
+  
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['income']
+    drop_columns: []
+  
+  feature_selection:
+    run: true
+    experiment: 'boruta_only' # From feature_selection_experiments.yml
+  
+  training:
+    backend: scikit-learn
+    problem_type: Classification
+    experiment: 'quick_classification_comparison' # From experiments.yml
+  
+  evaluation:
+    metrics: ['Accuracy', 'F1 Score', 'Precision', 'Recall']
+
+# ========================================================
+# EXPERIMENT 6: Robust Regression with Feature Selection
+# ========================================================
+robust_regression:
+  description: "Comparing robust regressors with feature selection for noisy data."
+  
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['hours-per-week']
+    drop_columns: ['income']
+  
+  feature_selection:
+    run: true
+    experiment: 'default_comparison' # Will use regression-appropriate settings
+  
+  training:
+    backend: scikit-learn
+    problem_type: Regression
+    experiment: 'robust_regression_comparison' # From experiments.yml
+  
+  evaluation:
+    metrics: ['R2', 'MAE', 'MSE']
+
+# ========================================================
+# EXPERIMENT 7: Regression with Boruta Feature Selection
+# ========================================================
+regression_boruta:
+  description: "Regression using Boruta feature selection algorithm."
+  
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['hours-per-week']
+    drop_columns: ['income']
+  
+  feature_selection:
+    run: true
+    experiment: 'boruta_only' # From feature_selection_experiments.yml
+  
+  training:
+    backend: scikit-learn
+    problem_type: Regression
+    experiment: 'linear_regression_models' # From experiments.yml
+  
+  evaluation:
+    metrics: ['R2', 'MAE', 'MSE']
+
+# ========================================================
+# EXPERIMENT 8: Grid Search Hyperparameter Tuning Test
+# ========================================================
+grid_search_test:
+  description: "Test grid search hyperparameter tuning functionality."
+
+  data:
+    source: "examples/dataset/adult_census_sample.csv"
+    target_columns: ['income']
+    drop_columns: []
+
+  feature_selection:
+    run: false
+
+  training:
+    backend: scikit-learn
+    problem_type: Classification
+    experiment: 'grid_search_test' # From experiments.yml
+    tuning_method: 'grid_search'
+    tuning_config: 'configs/tuning_grid_test.yml'
+    tuning_metric: 'Accuracy'
+    cv: 2
+
+  evaluation:
+    metrics: ['Accuracy', 'F1 Score', 'Precision']
