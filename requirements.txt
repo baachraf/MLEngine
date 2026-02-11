@@ -54,3 +54,4 @@ torch==2.3.0
 torchvision==0.18.0
 torchaudio==2.3.0
 pygwalker==0.4.9.12
+yfinance  # Required for Notebook 5 (Financial Time Series Analysis)
