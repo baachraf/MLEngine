@@ -26,7 +26,7 @@ This project includes both the `ML_Engine` library and a powerful, config-driven
 
 ## Example Notebooks
 
-The `examples/` directory contains comprehensive Jupyter notebooks demonstrating key ML_Engine capabilities using the **Adult Census dataset**. All notebooks include inline visualization and automatic plot saving to the `outputs/` directory.
+The `examples/` directory contains comprehensive Jupyter notebooks demonstrating key ML_Engine capabilities. Most notebooks use the **Adult Census dataset**, while Notebook 5 demonstrates financial time series analysis with real stock data. All notebooks include inline visualization and automatic plot saving to the `outputs/` directory.
 
 | Notebook | Description | Key Features |
 |----------|-------------|--------------|
@@ -46,9 +46,11 @@ The `examples/` directory contains comprehensive Jupyter notebooks demonstrating
 
 **Note**: Notebook 5 requires `yfinance` for downloading real stock data, which is included in `requirements.txt`.
 
-**Dataset**: All notebooks use the Adult Census dataset (`dataset/adult_census_sample.csv`) with:
+**Dataset**: Most notebooks use the Adult Census dataset (`dataset/adult_census_sample.csv`) with:
 - Classification target: `income` (binary classification)
 - Regression target: `hours-per-week` (continuous regression)
+
+**Notebook 5** uses real-time financial data downloaded via `yfinance` (AAPL stock data by default).
 
 **Plot Saving**: Every visualization automatically saves to `outputs/{notebook_name}/` for reproducible analysis.
 
