@@ -227,7 +227,11 @@ pip install -e .[all]
 
 ### Documentation
 
-The full library documentation is built with Sphinx.
+The full library documentation is built with Sphinx. **Pre-built HTML documentation is included in the repository** and can be viewed immediately:
+
+1.  **View pre-built documentation:** Open `ML_Engine/docs/build/html/index.html` in your browser.
+
+If you need to rebuild the documentation (e.g., after code changes):
 
 1.  **Navigate to the docs directory:** `cd ML_Engine/docs`
 2.  **Build the HTML:** `.\\make.bat html` (on Windows) or `make html` (on macOS/Linux)
