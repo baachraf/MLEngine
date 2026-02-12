@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>ML_Engine.features package &#8212; ML Engine 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ML_Engine.models package" href="ML_Engine.models.html" />
+    <link rel="prev" title="ML_Engine.evaluation package" href="ML_Engine.evaluation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-ML_Engine.features">
+<span id="ml-engine-features-package"></span><h1>ML_Engine.features package<a class="headerlink" href="#module-ML_Engine.features" title="Link to this heading">¶</a></h1>
+<section id="features-sub-package">
+<h2>Features Sub-package<a class="headerlink" href="#features-sub-package" title="Link to this heading">¶</a></h2>
+<p>Modules for feature selection and dimensionality reduction.</p>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-ML_Engine.features.reduction">
+<span id="ml-engine-features-reduction-module"></span><h2>ML_Engine.features.reduction module<a class="headerlink" href="#module-ML_Engine.features.reduction" title="Link to this heading">¶</a></h2>
+<section id="dimensionality-reduction">
+<h3>Dimensionality Reduction<a class="headerlink" href="#dimensionality-reduction" title="Link to this heading">¶</a></h3>
+<p>Functions for dimensionality reduction techniques.
+Note: PCA is also available in feature_selection.py as apply_pca().</p>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.reduction.apply_dimensionality_reduction">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.reduction.</span></span><span class="sig-name descname"><span class="pre">apply_dimensionality_reduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pca'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/reduction.html#apply_dimensionality_reduction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.reduction.apply_dimensionality_reduction" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for reduce_dimensions for backward compatibility.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>method</strong> (<em>{'pca'</em><em>, </em><em>'tsne'</em><em>, </em><em>'umap'}</em>) – Dimensionality reduction method</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments passed to the specific method</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>X_reduced</strong> (<em>array-like</em>) – Reduced data</p></li>
+<li><p><em>model</em> – Fitted reduction model</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.reduction.apply_pca">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.reduction.</span></span><span class="sig-name descname"><span class="pre">apply_pca</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">should_encode_categorical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/reduction.html#apply_pca"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.reduction.apply_pca" title="Link to this definition">¶</a></dt>
+<dd><p>Apply Principal Component Analysis (PCA).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>n_components</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of components. If None, use variance threshold.</p></li>
+<li><p><strong>variance</strong> (<em>float</em><em>, </em><em>default=0.95</em>) – Variance to retain (used if n_components is None)</p></li>
+<li><p><strong>should_encode_categorical</strong> (<em>bool</em><em>, </em><em>default=True</em>) – Whether to encode categorical columns using label encoding</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>X_pca</strong> (<em>array-like</em>) – Transformed data</p></li>
+<li><p><strong>pca</strong> (<em>PCA</em>) – Fitted PCA object</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.reduction.apply_tsne">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.reduction.</span></span><span class="sig-name descname"><span class="pre">apply_tsne</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perplexity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">should_encode_categorical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/reduction.html#apply_tsne"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.reduction.apply_tsne" title="Link to this definition">¶</a></dt>
+<dd><p>Apply t-Distributed Stochastic Neighbor Embedding (t-SNE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>n_components</strong> (<em>int</em><em>, </em><em>default=2</em>) – Number of dimensions for embedding (2 or 3)</p></li>
+<li><p><strong>perplexity</strong> (<em>float</em><em>, </em><em>default=30.0</em>) – t-SNE perplexity parameter</p></li>
+<li><p><strong>random_state</strong> (<em>int</em><em>, </em><em>default=42</em>) – Random seed</p></li>
+<li><p><strong>should_encode_categorical</strong> (<em>bool</em><em>, </em><em>default=True</em>) – Whether to encode categorical columns using label encoding</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>X_tsne</strong> (<em>array-like</em>) – Embedded data</p></li>
+<li><p><strong>tsne</strong> (<em>TSNE</em>) – Fitted t-SNE object</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.reduction.apply_umap">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.reduction.</span></span><span class="sig-name descname"><span class="pre">apply_umap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_neighbors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_dist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">should_encode_categorical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/reduction.html#apply_umap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.reduction.apply_umap" title="Link to this definition">¶</a></dt>
+<dd><p>Apply Uniform Manifold Approximation and Projection (UMAP).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>n_components</strong> (<em>int</em><em>, </em><em>default=2</em>) – Number of dimensions for embedding</p></li>
+<li><p><strong>n_neighbors</strong> (<em>int</em><em>, </em><em>default=15</em>) – Number of neighbors</p></li>
+<li><p><strong>min_dist</strong> (<em>float</em><em>, </em><em>default=0.1</em>) – Minimum distance between points in embedding</p></li>
+<li><p><strong>random_state</strong> (<em>int</em><em>, </em><em>default=42</em>) – Random seed</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>X_umap</strong> (<em>array-like</em>) – Embedded data</p></li>
+<li><p><strong>reducer</strong> (<em>umap.UMAP</em>) – Fitted UMAP object</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ImportError</strong> – If umap-learn package is not installed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.reduction.get_available_methods">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.reduction.</span></span><span class="sig-name descname"><span class="pre">get_available_methods</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/reduction.html#get_available_methods"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.reduction.get_available_methods" title="Link to this definition">¶</a></dt>
+<dd><p>Get list of available dimensionality reduction methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Method names</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.reduction.reduce_dimensions">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.reduction.</span></span><span class="sig-name descname"><span class="pre">reduce_dimensions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pca'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/reduction.html#reduce_dimensions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.reduction.reduce_dimensions" title="Link to this definition">¶</a></dt>
+<dd><p>Unified interface for dimensionality reduction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>method</strong> (<em>{'pca'</em><em>, </em><em>'tsne'</em><em>, </em><em>'umap'}</em>) – Dimensionality reduction method</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments passed to the specific method</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>X_reduced</strong> (<em>array-like</em>) – Reduced data</p></li>
+<li><p><em>model</em> – Fitted reduction model</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-ML_Engine.features.selection">
+<span id="ml-engine-features-selection-module"></span><h2>ML_Engine.features.selection module<a class="headerlink" href="#module-ML_Engine.features.selection" title="Link to this heading">¶</a></h2>
+<section id="feature-selection-and-engineering">
+<h3>Feature Selection and Engineering<a class="headerlink" href="#feature-selection-and-engineering" title="Link to this heading">¶</a></h3>
+<p>Functions for feature selection, engineering, and dimensionality reduction.</p>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.selection.apply_pca">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.selection.</span></span><span class="sig-name descname"><span class="pre">apply_pca</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">should_encode_categorical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/selection.html#apply_pca"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.selection.apply_pca" title="Link to this definition">¶</a></dt>
+<dd><p>Apply Principal Component Analysis (PCA).
+Wrapper for reduction.apply_pca to ensure availability in this module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>n_components</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of components</p></li>
+<li><p><strong>variance</strong> (<em>float</em><em>, </em><em>default=0.95</em>) – Variance to retain</p></li>
+<li><p><strong>should_encode_categorical</strong> (<em>bool</em><em>, </em><em>default=True</em>) – Whether to encode categorical columns using label encoding</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>X_pca</strong> (<em>array-like</em>) – Transformed data</p></li>
+<li><p><strong>pca</strong> (<em>PCA</em>) – Fitted PCA object</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.selection.boruta_feature_selection">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.selection.</span></span><span class="sig-name descname"><span class="pre">boruta_feature_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'classification'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/selection.html#boruta_feature_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.selection.boruta_feature_selection" title="Link to this definition">¶</a></dt>
+<dd><p>Boruta all-relevant feature selection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – Target data</p></li>
+<li><p><strong>problem_type</strong> (<em>{'classification'</em><em>, </em><em>'regression'}</em>) – Problem type</p></li>
+<li><p><strong>max_iter</strong> (<em>int</em><em>, </em><em>default=100</em>) – Maximum number of iterations</p></li>
+<li><p><strong>random_state</strong> (<em>int</em><em>, </em><em>default=42</em>) – Random seed</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>selected_features</strong> (<em>array-like</em>) – Indices of selected features</p></li>
+<li><p><strong>feature_importances</strong> (<em>array-like</em>) – Feature importances</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ImportError</strong> – If boruta package is not installed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.selection.get_rfe_result">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.selection.</span></span><span class="sig-name descname"><span class="pre">get_rfe_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimator_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/selection.html#get_rfe_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.selection.get_rfe_result" title="Link to this definition">¶</a></dt>
+<dd><p>Perform Recursive Feature Elimination (RFE) and return selected features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>estimator</strong> (<em>sklearn estimator class</em>) – Estimator to use (e.g., RandomForestClassifier)</p></li>
+<li><p><strong>estimator_params</strong> (<em>dict</em>) – Parameters for the estimator</p></li>
+<li><p><strong>k</strong> (<em>int</em>) – Number of features to select</p></li>
+<li><p><strong>step</strong> (<em>int</em><em> or </em><em>float</em>) – Number/percentage of features to remove at each iteration</p></li>
+<li><p><strong>X_train</strong> (<em>array-like</em>) – Training features</p></li>
+<li><p><strong>y_train</strong> (<em>array-like</em>) – Training target</p></li>
+<li><p><strong>feature_names</strong> (<em>list</em>) – Names of features</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>selected_features</strong> (<em>list</em>) – Names of selected features</p></li>
+<li><p><strong>selector</strong> (<em>RFE</em>) – Fitted RFE selector</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.selection.recursive_feature_elimination">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.selection.</span></span><span class="sig-name descname"><span class="pre">recursive_feature_elimination</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features_to_select</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'classification'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">estimator_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/selection.html#recursive_feature_elimination"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.selection.recursive_feature_elimination" title="Link to this definition">¶</a></dt>
+<dd><p>Recursive Feature Elimination.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – Target data</p></li>
+<li><p><strong>estimator</strong> (<em>object</em><em>, </em><em>optional</em>) – Estimator to use. If None, defaults based on problem_type.</p></li>
+<li><p><strong>n_features_to_select</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of features to select. If None, half of features.</p></li>
+<li><p><strong>step</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>default=1</em>) – Number of features to remove at each iteration</p></li>
+<li><p><strong>problem_type</strong> (<em>{'classification'</em><em>, </em><em>'regression'}</em>) – Problem type</p></li>
+<li><p><strong>**estimator_params</strong> (<em>dict</em>) – Parameters for estimator</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>selected_features</strong> (<em>array-like</em>) – Indices of selected features</p></li>
+<li><p><strong>rankings</strong> (<em>array-like</em>) – Feature rankings (1 = best)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.selection.run_feature_selection_experiment">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.selection.</span></span><span class="sig-name descname"><span class="pre">run_feature_selection_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/ML_Engine/features/selection.html#run_feature_selection_experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.selection.run_feature_selection_experiment" title="Link to this definition">¶</a></dt>
+<dd><p>Run a feature selection experiment from a YAML configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_name</strong> (<em>str</em>) – The name of the experiment to run.</p></li>
+<li><p><strong>X</strong> (<em>pd.DataFrame</em>) – Feature data.</p></li>
+<li><p><strong>y</strong> (<em>pd.Series</em>) – Target data.</p></li>
+<li><p><strong>problem_type</strong> (<em>{'classification'</em><em>, </em><em>'regression'}</em>) – The type of machine learning problem.</p></li>
+<li><p><strong>config_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to the feature selection experiments YAML file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary where keys are method names and values are lists of selected feature names.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.selection.select_k_best_features">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.selection.</span></span><span class="sig-name descname"><span class="pre">select_k_best_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mutual_info'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'classification'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/selection.html#select_k_best_features"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.selection.select_k_best_features" title="Link to this definition">¶</a></dt>
+<dd><p>Select k best features using scoring function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – Target data</p></li>
+<li><p><strong>k</strong> (<em>int</em><em>, </em><em>default=10</em>) – Number of features to select</p></li>
+<li><p><strong>score_func</strong> (<em>{'mutual_info'</em><em>, </em><em>'f_classif'</em><em>, </em><em>'f_regression'</em><em>, </em><em>'chi2'}</em>) – Scoring function</p></li>
+<li><p><strong>problem_type</strong> (<em>{'classification'</em><em>, </em><em>'regression'}</em>) – Problem type</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>selected_features</strong> (<em>array-like</em>) – Indices of selected features</p></li>
+<li><p><strong>scores</strong> (<em>array-like</em>) – Feature scores</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ML_Engine.features.selection.variance_feature_selection">
+<span class="sig-prename descclassname"><span class="pre">ML_Engine.features.selection.</span></span><span class="sig-name descname"><span class="pre">variance_feature_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ML_Engine/features/selection.html#variance_feature_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ML_Engine.features.selection.variance_feature_selection" title="Link to this definition">¶</a></dt>
+<dd><p>Select features based on variance threshold.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>array-like</em><em> or </em><em>pandas.DataFrame</em>) – Feature data</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>default=0.0</em>) – Variance threshold</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>selected_features</strong> – Indices of selected features</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>array-like</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ML Engine</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="ML_Engine.html">ML_Engine package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="ML_Engine.html#id1">ML Engine Package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="ML_Engine.html#subpackages">Subpackages</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="ML_Engine.html">ML_Engine package</a><ul>
+      <li>Previous: <a href="ML_Engine.evaluation.html" title="previous chapter">ML_Engine.evaluation package</a></li>
+      <li>Next: <a href="ML_Engine.models.html" title="next chapter">ML_Engine.models package</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, ACHRAF BEN AHMED.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/ML_Engine.features.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

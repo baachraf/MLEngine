@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Installation &#8212; ML Engine 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ML_Engine package" href="ML_Engine.html" />
+    <link rel="prev" title="Welcome to the ML Engine’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h1>
+<p>This guide provides instructions for installing the <code class="docutils literal notranslate"><span class="pre">ML_Engine</span></code> library and its dependencies.</p>
+<section id="core-dependencies">
+<h2>Core Dependencies<a class="headerlink" href="#core-dependencies" title="Link to this heading">¶</a></h2>
+<p>The core library requires a set of essential packages to function. You can install these using the <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> file located in the root of the project.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</section>
+<section id="optional-dependencies">
+<h2>Optional Dependencies<a class="headerlink" href="#optional-dependencies" title="Link to this heading">¶</a></h2>
+<p>For advanced features like AutoML, specialized feature selection, and plotting, you need to install additional packages. These are not included in the main <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> file to keep the core library lightweight.</p>
+<section id="automl">
+<h3>AutoML<a class="headerlink" href="#automl" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p><strong>PyCaret</strong>: For running AutoML experiments with PyCaret.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pycaret
+</pre></div>
+</div>
+</li>
+<li><p><strong>H2O</strong>: For running AutoML experiments with H2O.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>h2o
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="advanced-feature-selection">
+<h3>Advanced Feature Selection<a class="headerlink" href="#advanced-feature-selection" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p><strong>Boruta</strong>: For using the Boruta feature selection algorithm.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>boruta
+</pre></div>
+</div>
+</li>
+<li><p><strong>XGBoost</strong>: For using XGBoost-based feature importance.</p>
+</li>
+</ul>
+</section>
+<section id="imbalance-handling">
+<h3>Imbalance Handling<a class="headerlink" href="#imbalance-handling" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p><strong>imbalanced-learn</strong>: For most classification imbalance techniques (SMOTE, ADASYN, etc.).</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>imbalanced-learn
+</pre></div>
+</div>
+</li>
+<li><p><strong>ImbalancedLearningRegression</strong>: For regression-specific imbalance techniques.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>ImbalancedLearningRegression
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="uncertainty-quantification">
+<h3>Uncertainty Quantification<a class="headerlink" href="#uncertainty-quantification" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p><strong>MAPIE</strong>: For calculating prediction intervals.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>mapie
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="plotting">
+<h3>Plotting<a class="headerlink" href="#plotting" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p><strong>Matplotlib &amp; Seaborn</strong>: For generating visualizations.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>matplotlib<span class="w"> </span>seaborn
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ML Engine</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core-dependencies">Core Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optional-dependencies">Optional Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ML_Engine.html">ML_Engine package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to the ML Engine’s documentation!</a></li>
+      <li>Next: <a href="ML_Engine.html" title="next chapter">ML_Engine package</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, ACHRAF BEN AHMED.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

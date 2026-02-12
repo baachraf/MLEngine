@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ML_Engine.models.configs &#8212; ML Engine 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ML_Engine.models.configs</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Model Configurations</span>
+<span class="sd">====================</span>
+
+<span class="sd">Loads and manages model configurations from external YAML files.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">gaussian_process</span><span class="p">,</span> <span class="n">linear_model</span><span class="p">,</span> <span class="n">discriminant_analysis</span><span class="p">,</span> <span class="n">dummy</span><span class="p">,</span>
+    <span class="n">ensemble</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">neighbors</span><span class="p">,</span> <span class="n">svm</span><span class="p">,</span> <span class="n">naive_bayes</span><span class="p">,</span> <span class="n">kernel_ridge</span><span class="p">,</span>
+    <span class="n">neural_network</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">SGDClassifier</span>
+
+<span class="c1"># Optional imports</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xgb</span>
+    <span class="n">XGB_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">xgb</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">XGB_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">lightgbm</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lgb</span>
+    <span class="n">LGB_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">lgb</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">LGB_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># --- Helper for missing libraries ---</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_MissingLibrary</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">library_name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">library_name</span> <span class="o">=</span> <span class="n">library_name</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">library_name</span><span class="si">}</span><span class="s2"> is not installed.&quot;</span><span class="p">)</span>
+
+<span class="c1"># --- Mapping model names to their actual class objects ---</span>
+<span class="n">MODEL_CLASS_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># Classification</span>
+    <span class="s2">&quot;GaussianProcessClassifier&quot;</span><span class="p">:</span> <span class="n">gaussian_process</span><span class="o">.</span><span class="n">GaussianProcessClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;RidgeClassifier&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">RidgeClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;QuadraticDiscriminantAnalysis&quot;</span><span class="p">:</span> <span class="n">discriminant_analysis</span><span class="o">.</span><span class="n">QuadraticDiscriminantAnalysis</span><span class="p">,</span>
+    <span class="s2">&quot;LinearDiscriminantAnalysis&quot;</span><span class="p">:</span> <span class="n">discriminant_analysis</span><span class="o">.</span><span class="n">LinearDiscriminantAnalysis</span><span class="p">,</span>
+    <span class="s2">&quot;DummyClassifier&quot;</span><span class="p">:</span> <span class="n">dummy</span><span class="o">.</span><span class="n">DummyClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;LogisticRegression&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LogisticRegression</span><span class="p">,</span>
+    <span class="s2">&quot;GradientBoostingClassifier&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">GradientBoostingClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;ExtraTreesClassifier&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">ExtraTreesClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;RandomForestClassifier&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">RandomForestClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;XGBClassifier&quot;</span><span class="p">:</span> <span class="n">xgb</span><span class="o">.</span><span class="n">XGBClassifier</span> <span class="k">if</span> <span class="n">XGB_AVAILABLE</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s2">&quot;xgboost&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;LGBMClassifier&quot;</span><span class="p">:</span> <span class="n">lgb</span><span class="o">.</span><span class="n">LGBMClassifier</span> <span class="k">if</span> <span class="n">LGB_AVAILABLE</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s2">&quot;lightgbm&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;DecisionTreeClassifier&quot;</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">DecisionTreeClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;KNeighborsClassifier&quot;</span><span class="p">:</span> <span class="n">neighbors</span><span class="o">.</span><span class="n">KNeighborsClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;SVC&quot;</span><span class="p">:</span> <span class="n">svm</span><span class="o">.</span><span class="n">SVC</span><span class="p">,</span>
+    <span class="s2">&quot;GaussianNB&quot;</span><span class="p">:</span> <span class="n">naive_bayes</span><span class="o">.</span><span class="n">GaussianNB</span><span class="p">,</span>
+    <span class="s2">&quot;AdaBoostClassifier&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">AdaBoostClassifier</span><span class="p">,</span>
+    <span class="s2">&quot;SGDClassifier&quot;</span><span class="p">:</span> <span class="n">SGDClassifier</span><span class="p">,</span>
+    <span class="c1"># Regression</span>
+    <span class="s2">&quot;KNeighborsRegressor&quot;</span><span class="p">:</span> <span class="n">neighbors</span><span class="o">.</span><span class="n">KNeighborsRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;DecisionTreeRegressor&quot;</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">DecisionTreeRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;AdaBoostRegressor&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">AdaBoostRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;DummyRegressor&quot;</span><span class="p">:</span> <span class="n">dummy</span><span class="o">.</span><span class="n">DummyRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;PassiveAggressiveRegressor&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">PassiveAggressiveRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;RANSACRegressor&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">RANSACRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;TheilSenRegressor&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">TheilSenRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;HuberRegressor&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">HuberRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;KernelRidge&quot;</span><span class="p">:</span> <span class="n">kernel_ridge</span><span class="o">.</span><span class="n">KernelRidge</span><span class="p">,</span>
+    <span class="s2">&quot;SVR&quot;</span><span class="p">:</span> <span class="n">svm</span><span class="o">.</span><span class="n">SVR</span><span class="p">,</span>
+    <span class="s2">&quot;Lars&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">Lars</span><span class="p">,</span>
+    <span class="s2">&quot;LassoLars&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LassoLars</span><span class="p">,</span>
+    <span class="s2">&quot;OrthogonalMatchingPursuit&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">OrthogonalMatchingPursuit</span><span class="p">,</span>
+    <span class="s2">&quot;BayesianRidge&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">BayesianRidge</span><span class="p">,</span>
+    <span class="s2">&quot;ARDRegression&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">ARDRegression</span><span class="p">,</span>
+    <span class="s2">&quot;LinearRegression&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">,</span>
+    <span class="s2">&quot;Ridge&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">Ridge</span><span class="p">,</span>
+    <span class="s2">&quot;Lasso&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">Lasso</span><span class="p">,</span>
+    <span class="s2">&quot;GradientBoostingRegressor&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">GradientBoostingRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;ExtraTreesRegressor&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">ExtraTreesRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;ElasticNet&quot;</span><span class="p">:</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">ElasticNet</span><span class="p">,</span>
+    <span class="s2">&quot;RandomForestRegressor&quot;</span><span class="p">:</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">RandomForestRegressor</span><span class="p">,</span>
+    <span class="s2">&quot;XGBRegressor&quot;</span><span class="p">:</span> <span class="n">xgb</span><span class="o">.</span><span class="n">XGBRegressor</span> <span class="k">if</span> <span class="n">XGB_AVAILABLE</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s2">&quot;xgboost&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;LGBMRegressor&quot;</span><span class="p">:</span> <span class="n">lgb</span><span class="o">.</span><span class="n">LGBMRegressor</span> <span class="k">if</span> <span class="n">LGB_AVAILABLE</span> <span class="k">else</span> <span class="n">_MissingLibrary</span><span class="p">(</span><span class="s2">&quot;lightgbm&quot;</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="c1"># --- Common aliases for model names ---</span>
+<span class="n">_COMMON_MODEL_ALIASES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;XGBoost&#39;</span><span class="p">:</span> <span class="s1">&#39;XGBClassifier&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;LightGBM&#39;</span><span class="p">:</span> <span class="s1">&#39;LGBMClassifier&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># --- Regression-specific aliases ---</span>
+<span class="n">_REGRESSION_ALIASES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;XGBoost&#39;</span><span class="p">:</span> <span class="s1">&#39;XGBRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;LightGBM&#39;</span><span class="p">:</span> <span class="s1">&#39;LGBMRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;RandomForest&#39;</span><span class="p">:</span> <span class="s1">&#39;RandomForestRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DecisionTree&#39;</span><span class="p">:</span> <span class="s1">&#39;DecisionTreeRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;GradientBoosting&#39;</span><span class="p">:</span> <span class="s1">&#39;GradientBoostingRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ExtraTrees&#39;</span><span class="p">:</span> <span class="s1">&#39;ExtraTreesRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;AdaBoost&#39;</span><span class="p">:</span> <span class="s1">&#39;AdaBoostRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;KNeighbors&#39;</span><span class="p">:</span> <span class="s1">&#39;KNeighborsRegressor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SVR&#39;</span><span class="p">:</span> <span class="s1">&#39;SVR&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;LinearRegression&#39;</span><span class="p">:</span> <span class="s1">&#39;LinearRegression&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Ridge&#39;</span><span class="p">:</span> <span class="s1">&#39;Ridge&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Lasso&#39;</span><span class="p">:</span> <span class="s1">&#39;Lasso&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ElasticNet&#39;</span><span class="p">:</span> <span class="s1">&#39;ElasticNet&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_MODEL_CONFIGS</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_model_configs</span><span class="p">(</span><span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load model configurations from a YAML file.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_MODEL_CONFIGS</span>
+    <span class="k">if</span> <span class="n">_MODEL_CONFIGS</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Default path assumes `configs` directory is at the project root</span>
+        <span class="n">base_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">))</span>
+        <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="s1">&#39;configs&#39;</span><span class="p">,</span> <span class="s1">&#39;model_defaults.yml&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration file not found at </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">. No models will be available.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">yaml_configs</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    
+    <span class="c1"># Add the actual class object back into the loaded config</span>
+    <span class="k">for</span> <span class="n">problem_type</span><span class="p">,</span> <span class="n">models</span> <span class="ow">in</span> <span class="n">yaml_configs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">models</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="n">MODEL_CLASS_MAP</span><span class="p">:</span>
+                <span class="n">config</span><span class="p">[</span><span class="s1">&#39;class&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MODEL_CLASS_MAP</span><span class="p">[</span><span class="n">model_name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Class for model &#39;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39; not found in MODEL_CLASS_MAP.&quot;</span><span class="p">)</span>
+    
+    <span class="n">_MODEL_CONFIGS</span> <span class="o">=</span> <span class="n">yaml_configs</span>
+
+<div class="viewcode-block" id="get_model_config">
+<a class="viewcode-back" href="../../../ML_Engine.models.html#ML_Engine.models.configs.get_model_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">problem_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get configuration for a specific model.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model_name : str</span>
+<span class="sd">        Name of the model.</span>
+<span class="sd">    problem_type : {&#39;classification&#39;, &#39;regression&#39;}</span>
+<span class="sd">        Type of problem (case-insensitive).</span>
+<span class="sd">    config_path : str, optional</span>
+<span class="sd">        Path to a custom model configuration YAML file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Model configuration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_load_model_configs</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+    
+    <span class="c1"># Normalize problem_type to lowercase for case-insensitive matching</span>
+    <span class="n">problem_type</span> <span class="o">=</span> <span class="n">problem_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    
+    <span class="n">models_dict</span> <span class="o">=</span> <span class="n">_MODEL_CONFIGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">problem_type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">models_dict</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No models found for problem type: </span><span class="si">{</span><span class="n">problem_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Check for common aliases first</span>
+    <span class="k">if</span> <span class="n">problem_type</span> <span class="o">==</span> <span class="s1">&#39;classification&#39;</span><span class="p">:</span>
+        <span class="n">aliased_name</span> <span class="o">=</span> <span class="n">_COMMON_MODEL_ALIASES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">problem_type</span> <span class="o">==</span> <span class="s1">&#39;regression&#39;</span><span class="p">:</span>
+        <span class="c1"># Use regression-specific aliases</span>
+        <span class="n">aliased_name</span> <span class="o">=</span> <span class="n">_REGRESSION_ALIASES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">aliased_name</span> <span class="o">=</span> <span class="n">model_name</span> <span class="c1"># Should not happen due to problem_type check</span>
+
+    <span class="n">model_name_to_check</span> <span class="o">=</span> <span class="n">aliased_name</span>
+
+    <span class="k">if</span> <span class="n">model_name_to_check</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">models_dict</span><span class="p">:</span>
+        <span class="c1"># Fallback to appending suffix if alias didn&#39;t work or wasn&#39;t used</span>
+        <span class="k">if</span> <span class="n">problem_type</span> <span class="o">==</span> <span class="s1">&#39;classification&#39;</span> <span class="ow">and</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name_to_check</span><span class="si">}</span><span class="s2">Classifier&quot;</span> <span class="ow">in</span> <span class="n">models_dict</span><span class="p">:</span>
+            <span class="n">model_name_to_check</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name_to_check</span><span class="si">}</span><span class="s2">Classifier&quot;</span>
+        <span class="k">elif</span> <span class="n">problem_type</span> <span class="o">==</span> <span class="s1">&#39;regression&#39;</span> <span class="ow">and</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name_to_check</span><span class="si">}</span><span class="s2">Regressor&quot;</span> <span class="ow">in</span> <span class="n">models_dict</span><span class="p">:</span>
+            <span class="n">model_name_to_check</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name_to_check</span><span class="si">}</span><span class="s2">Regressor&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model &#39;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39; not found for </span><span class="si">{</span><span class="n">problem_type</span><span class="si">}</span><span class="s2"> models. &quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot;Available models: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">models_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">models_dict</span><span class="p">[</span><span class="n">model_name_to_check</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="list_models">
+<a class="viewcode-back" href="../../../ML_Engine.models.html#ML_Engine.models.configs.list_models">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span><span class="n">problem_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List available models for a problem type.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    problem_type : {&#39;classification&#39;, &#39;regression&#39;}</span>
+<span class="sd">    config_path : str, optional</span>
+<span class="sd">        Path to a custom model configuration YAML file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        List of model names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_load_model_configs</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+    
+    <span class="c1"># Normalize problem_type to lowercase for case-insensitive matching</span>
+    <span class="n">problem_type</span> <span class="o">=</span> <span class="n">problem_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    
+    <span class="n">models_dict</span> <span class="o">=</span> <span class="n">_MODEL_CONFIGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">problem_type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">models_dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+        
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">models_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">ML Engine</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ML_Engine.html">ML_Engine package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, ACHRAF BEN AHMED.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
