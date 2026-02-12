@@ -27,7 +27,6 @@ venv/
 
 # Testing and documentation build artifacts
 .pytest_cache/
-ML_Engine/docs/build/
 
 # Documentation files excluded from repository
 Agent.md
